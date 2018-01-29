@@ -325,15 +325,23 @@ class AppForm(QMainWindow):
                 
             self.load_experiment_spc(x,y)
             
-            # Initialize shift an scale
+            # Initialize shift and scale
             self.ref_shift = 0.0
             self.ref_scale = 1.0
             self.refspc_table.setItem(2,1, QTableWidgetItem(str(self.ref_shift)))
             self.refspc_table.setItem(3,1, QTableWidgetItem(str(self.ref_scale)))
             
-            # Enable manipulations
-            self.shiftref_action.setEnabled(True)
-            self.scaleref_action.setEnabled(True)
+            if self.xaxis_units != "Energy(eV)":
+                for i,j in [(2,1)]:
+                    cell = self.refspc_table.item(i,j)
+                    cell.setTextColor(Qt.gray)
+                    cell.setFlags(cell.flags() ^ QtCore.Qt.ItemIsEnabled ^ QtCore.Qt.ItemIsEditable)
+                # Disable manipulations
+                self.shiftref_action.setEnabled(False)
+            else:
+                # Enable manipulations
+                self.shiftref_action.setEnabled(True)
+                self.scaleref_action.setEnabled(True)
 
 
     #==========================================================
@@ -395,7 +403,7 @@ class AppForm(QMainWindow):
                 ax2 = self.axes2
             else:
                 ax2 = None
-            export_xmgrace(path,self.axes,self.fcclass_list,self.labs,ax2=ax2,specs=spc)
+            export_xmgrace(path,self.axes,self.stickspc,self.labs,ax2=ax2,specs=spc)
     
     def on_about(self):
         msg = """
@@ -722,6 +730,7 @@ class AppForm(QMainWindow):
     def set_axis_labels(self):
         self.axes2.set_ylabel(r'$\varepsilon$ (dm$^3$mol$^{-1}$cm$^{-1}$)',fontsize=16)
         self.axes2.set_xlabel(self.xaxis_units,fontsize=16)
+        self.axes.set_xlabel(self.xaxis_units,fontsize=16)
         #self.axes.tick_params(direction='out',top=False, right=False)
             
 
@@ -742,8 +751,10 @@ class AppForm(QMainWindow):
         hwhm = float(str)
         fixaxes = self.fixaxes_cb.isChecked()
         
+        fosc2abs= 1054.94
+        
         #Convolution
-        xc,yc = convolute([self.xstick,self.ystick],hwhm=hwhm,broad=self.broadening,input_bins=False)
+        xc,yc = convolute([self.xstick,self.ystick*fosc2abs],hwhm=hwhm,broad=self.broadening,input_bins=False)
         # Plot convoluted
         self.spectrum_sim = self.axes2.plot(xc,yc,'--',color='k',label="Theor.")
         if self.xaxis_units == "Energy(eV)":
@@ -759,8 +770,10 @@ class AppForm(QMainWindow):
         hwhm = float(str)
         fixaxes = self.fixaxes_cb.isChecked()
         
+        fosc2abs= 1054.94
+        
         #Convolution (in energy(eV))
-        xc,yc = convolute([self.xstick,self.ystick],hwhm=hwhm,broad=self.broadening,input_bins=False)
+        xc,yc = convolute([self.xstick,self.ystick*fosc2abs],hwhm=hwhm,broad=self.broadening,input_bins=False)
         # Re-Plot convoluted
         #self.spectrum_sim[0].remove()
         self.spectrum_sim[0].set_xdata(xc)
@@ -1293,20 +1306,35 @@ class AppForm(QMainWindow):
             self.canvas.draw()
                 
             # Only allow change convolution in eV
+            # and shift ref spectrum
             if self.xaxis_units != "Energy(eV)":
                 # Deactivate convolution controls
                 self.inputBins_cb.setEnabled(False)
                 #self.broadbox.setTextColor(Qt.gray)
                 self.broadbox.setEnabled(False)
                 self.slider.setEnabled(False)
-                self.select_broad.setEnabled(False) 
+                self.select_broad.setEnabled(False)
+                if self.spectrum_ref and current_xaxis_units == "Energy(eV)":
+                    for i,j in [(2,1)]:
+                        cell = self.refspc_table.item(i,j)
+                        cell.setTextColor(Qt.gray)
+                        cell.setFlags(cell.flags() ^ QtCore.Qt.ItemIsEnabled ^ QtCore.Qt.ItemIsEditable)
+                    # Disable manipulations
+                    self.shiftref_action.setEnabled(False)
             else:
                 # Activate convolution controls
                 self.inputBins_cb.setEnabled(True)
                 #self.broadbox.setTextColor(Qt.black)
                 self.broadbox.setEnabled(True)
                 self.slider.setEnabled(True)
-                self.select_broad.setEnabled(True) 
+                self.select_broad.setEnabled(True)
+                if self.spectrum_ref and current_xaxis_units != "Energy(eV)":
+                    for i,j in [(2,1)]:
+                        cell = self.refspc_table.item(i,j)
+                        cell.setTextColor(Qt.black)
+                        cell.setFlags(cell.flags() ^ QtCore.Qt.ItemIsEnabled ^ QtCore.Qt.ItemIsEditable)
+                    # Disable manipulations
+                    self.shiftref_action.setEnabled(True)
             
                 
     def table_buttons_action(self,i,j):
@@ -1335,6 +1363,8 @@ class AppForm(QMainWindow):
 
         elif (i,j) == (2,2):
             # Tare the shift
+            if self.xaxis_units != "Energy(eV)":
+                return
             msg = "Reset shift to current value?"
             reply = QtGui.QMessageBox.question(self, 'Reset Shift', 
                          msg, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
@@ -2380,7 +2410,7 @@ def export_xmgrace(filename,ax,sticks,labs,ax2=None,specs=None):
     Variables
     * filename string : path to the file to save the export
     * ax,         mpl.axes        : graphic info
-    * class_list  list of vlines  : stick spectra (classes)
+    * sticks      list of vlines  : stick spectra (classes)
     * specs       Line2D          : convoluted spectrum
     * labs        dict            : labels in xmgr format (arg: labels as annotation Class)
     """
@@ -2470,21 +2500,21 @@ def export_xmgrace(filename,ax,sticks,labs,ax2=None,specs=None):
     k=-1
     ymax = -999.
     ymin =  999.
-    for iclass in range(9):
-        if (len(sticks[iclass]) == 0):
-            continue
-        k += 1
-        x = np.array([ sticks[iclass][i].DE        for i in range(len(sticks[iclass])) ])
-        y = np.array([ sticks[iclass][i].intensity for i in range(len(sticks[iclass])) ])
-        print >> f, "& %s"%(label_list[iclass])
-        print >> f, "@type bar"
-        print >> f, "@    s"+str(k)," line type 0"
-        print >> f, "@    s"+str(k)," legend  \"%s\""%(label_list[iclass])
-        print >> f, "@    s"+str(k)," symbol color %s"%(color_list[iclass])
-        for i in range(len(x)):
-            print >> f, x[i], y[i]
-        ymax = max(ymax,y.max())
-        ymin = max(ymin,y.min())
+
+    k += 1
+    # Load sticks
+    data = sticks.get_segments()
+    x = np.array([ data[i][0][0] for i in range(len(data)) ])
+    y = np.array([ data[i][1][1] for i in range(len(data)) ])
+    print >> f, "& Stick transitions"
+    print >> f, "@type bar"
+    print >> f, "@    s"+str(k)," line type 0"
+    #print >> f, "@    s"+str(k)," legend  \"%s\""%(label_list[iclass])
+    #print >> f, "@    s"+str(k)," symbol color %s"%(color_list[iclass])
+    for i in range(len(x)):
+        print >> f, x[i], y[i]
+    ymax = max(ymax,y.max())
+    ymin = max(ymin,y.min())
             
     # Convoluted spectrum. scaled TODO: use the alternative axis
     # This can be done either with another Graph or using alt-x axis
