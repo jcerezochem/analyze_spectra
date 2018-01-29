@@ -1,0 +1,12 @@
+analyze_UVspectra
+==================
+
+Python tools to analyze UV spectra from Gaussian log files
+
+Two tools are provided:
+
+ * analyze_UVspectra.py: convolute spectrum and optionally show the plot 
+                         for (basic) analysis
+
+ * analyze_UVspectra_PyQt4.py: open a Qt4 GUI for more refined analysis
+
