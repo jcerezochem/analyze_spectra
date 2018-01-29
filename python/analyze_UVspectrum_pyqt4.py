@@ -214,6 +214,8 @@ class AppForm(QMainWindow):
         self.spectrum_ref = None
         self.spectrum_sim = None
         self.AnnotationType = None
+        self.xaxis_eV_sim = None
+        self.xaxis_eV_ref = None
         
         # Get command line arguments
         cml_args = get_args()
@@ -234,16 +236,18 @@ class AppForm(QMainWindow):
         # Set fix parameters
         self.spc_type  = 'abs'
         self.data_type = 'Intensity'
+        self.xaxis_units = 'Energy(eV)'
 
         # Data load
         # Stick transitions (fort.21)
         self.states = read_td_glog(path+g09file)
+        # Get xstick,ystick
+        self.xstick = np.array([ self.states[i].energy for i in range(len(self.states)) ])
+        self.ystick = np.array([ self.states[i].oscstr for i in range(len(self.states)) ])
         
         # This is the load driver
         self.load_electr_sticks()
         self.set_axis_labels()
-        self.xbin = [ self.states[i].energy for i in range(len(self.states)) ]
-        self.ybin = [ self.states[i].oscstr for i in range(len(self.states)) ]
         self.load_convoluted()
         #self.load_legend()        
         
@@ -282,9 +286,20 @@ class AppForm(QMainWindow):
                 return
             # Transform X axis if needed
             if units == "cm^-1":
-                x = x * 1.23981e-4
+                if self.xaxis_units == "Energy(eV)":
+                    x = x * 1.23981e-4
+                elif self.xaxis_units == "Wavelength(nm)":
+                    x = 1.e7/x
             elif units == "nm":
-                x = 1239.81/x
+                if self.xaxis_units == "Energy(eV)":
+                    x = 1239.81/x
+                elif self.xaxis_units == "Wavenumber(cm-1)":
+                    x = 1.e7/x
+            elif units == "eV":
+                if self.xaxis_units == "Wavenumber(cm-1)":
+                    x = x / 1.23981e-4
+                elif self.xaxis_units == "Wavelength(nm)":
+                    x = 1239.81/x
                 
             # Pop-up a selector to indicate units of Yaxis
             ok, data_type = self.spc_import_assitant_Yaxis()
@@ -629,12 +644,22 @@ class AppForm(QMainWindow):
         # clear the axes and redraw the plot anew
         # 
         self.axes.set_title('UV spectrum Gaussian TD calculation',fontsize=18)
-        self.axes.set_xlabel('Energy (eV)',fontsize=16)
+        self.axes.set_xlabel(self.xaxis_units,fontsize=16)
         self.axes.set_ylabel('Osc. Strength',fontsize=16)
         self.axes.tick_params(direction='out',top=False, right=False)
         
         
         #Plotting sticks and store objects
+        
+        # If this is the first time we plot
+        yini,yfin = self.axes.get_ylim()
+        y2ini,y2fin = self.axes.get_ylim()
+        xini,xfin = self.axes.get_xlim()
+        # Before creating the graph, all limits are (0,1)
+        if yini == 0. and y2ini == 0. and xini == 0. and yfin == 1. and y2fin == 1. and xfin == 1.:
+            reuse_scale=False
+        else:
+            reuse_scale=True
 
         #Inialize variables
         xmin =  999.
@@ -642,8 +667,8 @@ class AppForm(QMainWindow):
         ymin =  0.
         ymax = -999
         #for iclass in range(9):
-        x = np.array([ self.states[i].energy for i in range(len(self.states)) ])
-        y = np.array([ self.states[i].oscstr for i in range(len(self.states)) ])
+        x = self.xstick #np.array([ self.states[i].energy for i in range(len(self.states)) ])
+        y = self.ystick #np.array([ self.states[i].oscstr for i in range(len(self.states)) ])
         z = np.zeros(len(x))
         if len(x) == 0:
             self.stickspc.append(None)
@@ -656,7 +681,7 @@ class AppForm(QMainWindow):
             ymax = max([ymax,max(y)])
             # Getting the type from the objects when loaded for future use
             self.LineCollectionType = type(self.stickspc)
-                
+        
         self.axes.set_ylim([0,ymax*1.1])
         self.axes.set_xlim([xmin-0.7,xmax+0.7])
         
@@ -696,12 +721,13 @@ class AppForm(QMainWindow):
             
     def set_axis_labels(self):
         self.axes2.set_ylabel(r'$\varepsilon$ (dm$^3$mol$^{-1}$cm$^{-1}$)',fontsize=16)
-        self.axes2.set_xlabel('Energy (eV)',fontsize=16)
+        self.axes2.set_xlabel(self.xaxis_units,fontsize=16)
         #self.axes.tick_params(direction='out',top=False, right=False)
             
 
     def load_fixconvolution(self,x,y):
         self.spectrum_sim = self.axes2.plot(x,y,'--',color='k',label="Conv")
+        self.xaxis_eV_sim = self.spectrum_sim[0].get_xdata()
         
         self.canvas.draw()
         
@@ -717,9 +743,11 @@ class AppForm(QMainWindow):
         fixaxes = self.fixaxes_cb.isChecked()
         
         #Convolution
-        xc,yc = convolute([self.xbin,self.ybin],hwhm=hwhm,broad=self.broadening,input_bins=False)
+        xc,yc = convolute([self.xstick,self.ystick],hwhm=hwhm,broad=self.broadening,input_bins=False)
         # Plot convoluted
         self.spectrum_sim = self.axes2.plot(xc,yc,'--',color='k',label="Theor.")
+        if self.xaxis_units == "Energy(eV)":
+            self.xaxis_eV_sim = self.spectrum_sim[0].get_xdata()
         if not fixaxes:
             self.rescale_yaxis()
         
@@ -732,7 +760,7 @@ class AppForm(QMainWindow):
         fixaxes = self.fixaxes_cb.isChecked()
         
         #Convolution (in energy(eV))
-        xc,yc = convolute([self.xbin,self.ybin],hwhm=hwhm,broad=self.broadening,input_bins=False)
+        xc,yc = convolute([self.xstick,self.ystick],hwhm=hwhm,broad=self.broadening,input_bins=False)
         # Re-Plot convoluted
         #self.spectrum_sim[0].remove()
         self.spectrum_sim[0].set_xdata(xc)
@@ -908,11 +936,11 @@ class AppForm(QMainWindow):
         x0, y0 = self.active_label.get_position()
         xe, ye = self.past_event.xdata,self.past_event.ydata
         x_range=self.axes.get_xlim()
-        # Set the presision based on the plot scale
-        eps_x = (x_range[1]-x_range[0])/50.
+        # Set the precision based on the plot scale
+        eps_x = abs((x_range[1]-x_range[0]))/50.
         y_range=self.axes.get_ylim()
-        eps_y = (y_range[1]-y_range[0])/50.
-        if abs(x0-xe) > eps_x and abs(x0-xe) > eps_y:
+        eps_y = abs((y_range[1]-y_range[0]))/50.
+        if abs(x0-xe) > eps_x and abs(y0-ye) > eps_y:
             return
         # Get the plot distance
         
@@ -987,8 +1015,8 @@ class AppForm(QMainWindow):
     # FUNCTIONS WITHOUT EVENT
     def add_label(self,tr):
         
-        stick_x = tr.energy
-        stick_y = tr.oscstr
+        stick_x = self.xstick[tr.root-1]
+        stick_y = self.ystick[tr.root-1]
         
         xd = stick_x
         yd = stick_y
@@ -1061,8 +1089,8 @@ class AppForm(QMainWindow):
         if self.active_tr is None: return
         
         tr = self.active_tr 
-        stick_x = tr.energy
-        stick_y = tr.oscstr
+        stick_x = self.xstick[tr.root-1]
+        stick_y = self.ystick[tr.root-1]
         
         # Add transition info to analysis_box
         self.analysis_box.setText(self.active_tr.info())
@@ -1104,26 +1132,15 @@ class AppForm(QMainWindow):
         self.data_type = self.select_data_type.currentText()
         
         if current_data_type != self.data_type:
+            xstick_eV=np.array([ self.states[i].energy for i in range(len(self.states)) ])
             factor = SpcConstants.factor[self.spc_type]
             n = SpcConstants.exp[self.spc_type]
-            if self.with_fort22:
-                if self.data_type == "Lineshape":
-                    # Division x/27.2116 could be included in the factor
-                    self.ybin /= (self.xbin/27.2116)**n * factor
-                elif self.data_type == "Intensity":
-                    # Division x/27.2116 could be included in the factor
-                    self.ybin *= (self.xbin/27.2116)**n * factor
-            else:
-                if self.spectrum_sim:
-                    x = self.spectrum_sim[0].get_xdata()
-                    y = self.spectrum_sim[0].get_ydata()
-                    if self.data_type == "Lineshape":
-                        # Division x/27.2116 could be included in the factor
-                        y /= (x/27.2116)**n * factor
-                    elif self.data_type == "Intensity":
-                        # Division x/27.2116 could be included in the factor
-                        y *= (x/27.2116)**n * factor
-                    self.spectrum_sim[0].set_ydata(y)
+            if self.data_type == "Lineshape":
+                # Division x/27.2116 could be included in the factor
+                self.ystick /= (xstick_eV/27.2116)**n * factor
+            elif self.data_type == "Intensity":
+                # Division x/27.2116 could be included in the factor
+                self.ystick *= (xstick_eV/27.2116)**n * factor
             
             if self.spectrum_ref:
                 x = self.spectrum_ref[0].get_xdata()
@@ -1137,14 +1154,160 @@ class AppForm(QMainWindow):
                 self.spectrum_ref[0].set_ydata(y)
                 
             self.set_axis_labels()
-            if self.with_fort22:
-                self.update_convolute()
-            else:
-                fixaxes = self.fixaxes_cb.isChecked()
-                if not fixaxes:
-                    self.rescale_yaxis()
-                self.canvas.draw()
+            self.update_convolute()
+
+    def update_xaxis_units(self):
+        eV2cm1=8068.5
+        
+        current_xaxis_units = self.xaxis_units
+        self.xaxis_units = self.select_xaxis_units.currentText()
+        
+        if current_xaxis_units != self.xaxis_units:
+            if self.xaxis_units == "Energy(eV)":
+                x = np.array([ self.states[i].energy for i in range(len(self.states)) ])
+                self.xstick = x
+                data = self.stickspc.get_segments()
+                for i in range(len(data)):
+                    data[i][0][0] = x[i]
+                    data[i][1][0] = x[i]
+                self.stickspc.set_segments(data)
+                self.spectrum_sim[0].set_xdata(self.xaxis_eV_sim)
+            elif self.xaxis_units == "Wavelength(nm)":
+                x = np.array([ self.states[i].wavelen for i in range(len(self.states)) ])
+                self.xstick = x
+                data = self.stickspc.get_segments()
+                for i in range(len(data)):
+                    data[i][0][0] = x[i]
+                    data[i][1][0] = x[i]
+                self.stickspc.set_segments(data)
+                x = 1.e7/eV2cm1/self.xaxis_eV_sim
+                self.spectrum_sim[0].set_xdata(x)
+            elif self.xaxis_units == "Wavenumber(cm-1)":
+                x = np.array([ self.states[i].energy for i in range(len(self.states)) ])*eV2cm1
+                self.xstick = x
+                data = self.stickspc.get_segments()
+                for i in range(len(data)):
+                    data[i][0][0] = x[i]
+                    data[i][1][0] = x[i]
+                self.stickspc.set_segments(data)
+                x = self.xaxis_eV_sim*eV2cm1
+                self.spectrum_sim[0].set_xdata(x)
+            
+            if self.spectrum_ref:
+                x = self.spectrum_ref[0].get_xdata()
+                if current_xaxis_units == "Energy(eV)":
+                    if self.xaxis_units == "Wavelength(nm)":
+                        x = 1.e7/eV2cm1/x
+                    elif self.xaxis_units == "Wavenumber(cm-1)":
+                        x = x*eV2cm1
+                if current_xaxis_units == "Wavenumber(cm-1)":
+                    if self.xaxis_units == "Wavelength(nm)":
+                        x = 1.e7/x
+                    elif self.xaxis_units == "Energy(eV)":
+                        x = x/eV2cm1
+                if current_xaxis_units == "Wavelength(nm)":
+                    if self.xaxis_units == "Wavenumber(cm-1)":
+                        x = 1.e7/x
+                    elif self.xaxis_units == "Energy(eV)":
+                        x = 1.e7/eV2cm1/x
+                x = self.spectrum_ref[0].set_xdata(x)
+                    
+            if self.selected:
+                i = self.active_tr.root-1
+                if self.xaxis_units == "Energy(eV)":
+                    x = np.array([ self.states[i].energy])
+                    data = self.selected.get_segments()
+                    for i in range(len(data)):
+                        data[i][0][0] = x[i]
+                        data[i][1][0] = x[i]
+                    self.selected.set_segments(data)
+                elif self.xaxis_units == "Wavelength(nm)":
+                    x = np.array([ self.states[i].wavelen])
+                    data = self.selected.get_segments()
+                    for i in range(len(data)):
+                        data[i][0][0] = x[i]
+                        data[i][1][0] = x[i]
+                    self.selected.set_segments(data)
+                elif self.xaxis_units == "Wavenumber(cm-1)":
+                    x = np.array([ self.states[i].energy])*eV2cm1
+                    self.xstick = x
+                    data = self.selected.get_segments()
+                    for i in range(len(data)):
+                        data[i][0][0] = x[i]
+                        data[i][1][0] = x[i]
+                    self.selected.set_segments(data)
                 
+            # Change xlim and labels
+            # First get label positions
+            xlab=[]
+            ylab=[]
+            xpin=[]
+            ypin=[]
+            for lab in self.labs:
+                x0, y0 = lab.get_position()
+                x1, y1 = lab.xy
+                xlab.append(x0)
+                ylab.append(y0)
+                xpin.append(x1)
+                ypin.append(y1)
+            xlab = np.array(xlab)
+            xpin = np.array(xpin)
+            x = np.array(self.axes.get_xlim())
+            if current_xaxis_units == "Energy(eV)":
+                if self.xaxis_units == "Wavelength(nm)":
+                    x = 1.e7/eV2cm1/x
+                    xlab = 1.e7/eV2cm1/xlab
+                    xpin = 1.e7/eV2cm1/xpin
+                elif self.xaxis_units == "Wavenumber(cm-1)":
+                    x = x*eV2cm1
+                    xlab = xlab*eV2cm1
+                    xpin = xpin*eV2cm1
+            if current_xaxis_units == "Wavenumber(cm-1)":
+                if self.xaxis_units == "Wavelength(nm)":
+                    x = 1.e7/x
+                    xlab = 1.e7/xlab
+                    xpin = 1.e7/xpin
+                elif self.xaxis_units == "Energy(eV)":
+                    x = x/eV2cm1
+                    xlab = xlab/eV2cm1
+                    xpin = xpin/eV2cm1
+            if current_xaxis_units == "Wavelength(nm)":
+                if self.xaxis_units == "Wavenumber(cm-1)":
+                    x = 1.e7/x
+                    xlab = 1.e7/xlab
+                    xpin = 1.e7/xpin
+                elif self.xaxis_units == "Energy(eV)":
+                    x = 1.e7/eV2cm1/x
+                    xlab = 1.e7/eV2cm1/xlab
+                    xpin = 1.e7/eV2cm1/xpin
+            # Now reset the lims (sort to have Wavelength in increasing order)
+            x.sort()
+            self.axes.set_xlim(x)
+            # and labels
+            for i,lab in enumerate(self.labs):
+                lab.set_position((xlab[i],ylab[i]))
+                lab.xy = (xpin[i],ypin[i])
+                
+            # Update plot
+            self.set_axis_labels()
+            self.canvas.draw()
+                
+            # Only allow change convolution in eV
+            if self.xaxis_units != "Energy(eV)":
+                # Deactivate convolution controls
+                self.inputBins_cb.setEnabled(False)
+                #self.broadbox.setTextColor(Qt.gray)
+                self.broadbox.setEnabled(False)
+                self.slider.setEnabled(False)
+                self.select_broad.setEnabled(False) 
+            else:
+                # Activate convolution controls
+                self.inputBins_cb.setEnabled(True)
+                #self.broadbox.setTextColor(Qt.black)
+                self.broadbox.setEnabled(True)
+                self.slider.setEnabled(True)
+                self.select_broad.setEnabled(True) 
+            
                 
     def table_buttons_action(self,i,j):
         # "X" button: clear spectrum
@@ -1417,8 +1580,8 @@ Examples
             stick_x = []
             stick_y = []
             for tr in tr_select:
-                stick_x.append(tr.DE)
-                stick_y.append(tr.intensity)
+                stick_x.append(self.xstick[tr.root-1])
+                stick_y.append(self.ystick[tr.root-1])
                 msg = msg+"\n"+tr.info()
             zero = np.zeros(len(stick_x))
             # Add transition info to analysis_box
@@ -1498,6 +1661,10 @@ Examples
         self.select_data_type.addItems(["Intensity","Lineshape"])
         self.select_data_type.currentIndexChanged.connect(self.update_data_type)
         
+        self.select_xaxis_units = QComboBox()
+        self.select_xaxis_units.addItems(["Energy(eV)","Wavenumber(cm-1)","Wavelength(nm)"])
+        self.select_xaxis_units.currentIndexChanged.connect(self.update_xaxis_units)
+        
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setMaximumWidth(200)
         self.slider.setRange(1, 100)
@@ -1526,6 +1693,7 @@ Examples
         eV_label    = QLabel('(eV)')
         broad_label = QLabel('Broadening')
         datatype_label = QLabel('Data Type')
+        xaxis_label = QLabel('X-axis')
         search_label = QLabel('Select transition/progression')
         # Splitters
         vline = QFrame()
@@ -1664,6 +1832,11 @@ Examples
         vbox_datatype.setAlignment(datatype_label, Qt.AlignLeft)
         vbox_datatype.addWidget(self.select_data_type)
         vbox_datatype.setAlignment(self.select_data_type, Qt.AlignLeft)
+        # Add x-axis to DataType sector
+        vbox_datatype.addWidget(xaxis_label)
+        vbox_datatype.setAlignment(xaxis_label, Qt.AlignLeft)
+        vbox_datatype.addWidget(self.select_xaxis_units)
+        vbox_datatype.setAlignment(self.select_xaxis_units, Qt.AlignLeft)
         ## MAIN LOWER BOX
         hbox = QHBoxLayout()
         hbox.addLayout(vbox_cleaner)
