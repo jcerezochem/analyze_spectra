@@ -226,12 +226,13 @@ class AppForm(QMainWindow):
             path=""
         else:
             file_choices = r"Gaussian log file (*.log);; All files (*)"
-            path = unicode(QFileDialog.getOpenFileName(self, 
+            g09file = unicode(QFileDialog.getOpenFileName(self, 
                             'Set the location of Gaussian output', '', 
                             file_choices))
-            if not path or not g09file in path:
+            if not g09file:
                 return
-            path = path.replace(g09file,"")
+
+        self.setWindowTitle('UV spectrum from '+g09file)
 
         # Set fix parameters
         self.spc_type  = 'abs'
@@ -240,7 +241,7 @@ class AppForm(QMainWindow):
 
         # Data load
         # Stick transitions (fort.21)
-        self.states = read_td_glog(path+g09file)
+        self.states = read_td_glog(g09file)
         # Get xstick,ystick
         self.xstick = np.array([ self.states[i].energy for i in range(len(self.states)) ])
         self.ystick = np.array([ self.states[i].oscstr for i in range(len(self.states)) ])
