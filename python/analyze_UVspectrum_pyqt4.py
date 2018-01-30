@@ -771,7 +771,10 @@ class AppForm(QMainWindow):
             
             
     def set_axis_labels(self):
-        self.axes2.set_ylabel(r'$\varepsilon$ (dm$^3$mol$^{-1}$cm$^{-1}$)',fontsize=16)
+        if self.data_type == "Lineshape":
+            self.axes2.set_ylabel(r'Lineshape (a.u.)',fontsize=16)
+        elif self.data_type == 'Intensity':
+            self.axes2.set_ylabel(r'$\varepsilon$ (dm$^3$mol$^{-1}$cm$^{-1}$)',fontsize=16)
         self.axes2.set_xlabel(self.xaxis_units,fontsize=16)
         self.axes.set_xlabel(self.xaxis_units,fontsize=16)
         #self.axes.tick_params(direction='out',top=False, right=False)
@@ -796,8 +799,25 @@ class AppForm(QMainWindow):
         
         fosc2abs= 1054.94
         
+        x = self.xstick
+        y = self.ystick*fosc2abs # take into account that transitions are in OS nos eps 
+        
+        # If Intensity, we need to pass to LS before convoluting
+        if self.data_type == "Intensity":
+            n = SpcConstants.exp[self.spc_type]
+            factor = SpcConstants.factor[self.spc_type]
+            # Division x/27.2116 could be included in the factor
+            y /= (x/27.2116)**n * factor
+        
         #Convolution
-        xc,yc = convolute([self.xstick,self.ystick*fosc2abs],hwhm=hwhm,broad=self.broadening,input_bins=False)
+        xc,yc = convolute([x,y],hwhm=hwhm,broad=self.broadening,input_bins=False)
+        
+        # If Intensity, set back from Lineshape
+        if self.data_type == "Intensity":
+            print 'Doin'
+            # Division x/27.2116 could be included in the factor
+            yc *= (xc/27.2116)**n * factor
+        
         # Plot convoluted
         self.spectrum_sim = self.axes2.plot(xc,yc,'--',color='k',label="Theor.")
         if self.xaxis_units == "Energy(eV)":
@@ -815,8 +835,24 @@ class AppForm(QMainWindow):
         
         fosc2abs= 1054.94
         
-        #Convolution (in energy(eV))
-        xc,yc = convolute([self.xstick,self.ystick*fosc2abs],hwhm=hwhm,broad=self.broadening,input_bins=False)
+        x = self.xstick
+        y = self.ystick*fosc2abs # take into account that transitions are in OS nos eps 
+        
+        # If Intensity, we need to pass to LS before convoluting
+        if self.data_type == "Intensity":
+            n = SpcConstants.exp[self.spc_type]
+            factor = SpcConstants.factor[self.spc_type]
+            # Division x/27.2116 could be included in the factor
+            y /= (x/27.2116)**n * factor
+        
+        #Convolution (in energy(eV) and Lineshape)
+        xc,yc = convolute([x,y],hwhm=hwhm,broad=self.broadening,input_bins=False)
+        
+        # If Intensity, set back from Lineshape
+        if self.data_type == "Intensity":
+            # Division x/27.2116 could be included in the factor
+            yc *= (xc/27.2116)**n * factor
+        
         # Re-Plot convoluted
         #self.spectrum_sim[0].remove()
         self.spectrum_sim[0].set_xdata(xc)
@@ -1197,6 +1233,16 @@ class AppForm(QMainWindow):
             elif self.data_type == "Intensity":
                 # Division x/27.2116 could be included in the factor
                 self.ystick *= (xstick_eV/27.2116)**n * factor
+                
+            x = self.xaxis_eV_sim
+            y = self.spectrum_sim[0].get_ydata()
+            if self.data_type == "Lineshape":
+                # Division x/27.2116 could be included in the factor
+                y /= (x/27.2116)**n * factor
+            elif self.data_type == "Intensity":
+                # Division x/27.2116 could be included in the factor
+                y *= (x/27.2116)**n * factor
+            self.spectrum_sim[0].set_ydata(y)
             
             if self.spectrum_ref:
                 x = self.spectrum_ref[0].get_xdata()
@@ -1209,8 +1255,12 @@ class AppForm(QMainWindow):
                     y *= (x/27.2116)**n * factor
                 self.spectrum_ref[0].set_ydata(y)
                 
+            # Update plot
             self.set_axis_labels()
-            self.update_convolute()
+            fixaxes = self.fixaxes_cb.isChecked()
+            if not fixaxes:
+                self.rescale_yaxis()
+            self.canvas.draw()
 
     def update_xaxis_units(self):
         eV2cm1=8068.5
@@ -2390,7 +2440,11 @@ def convolute(spc_stick,npoints=1000,hwhm=0.1,broad="Gau",input_bins=False):
             yhisto = y
             width = (x[1] - x[0])
         else:
-            extra_x = (x[-1] - x[0])*extra_factor
+            # Support graphs with only one transition
+            if len(x) > 1:
+                extra_x = (x[-1] - x[0])*extra_factor
+            else:
+                extra_x = (x[0]*0.1)*extra_factor
             yhisto, bins =np.histogram(x,range=[x[0]-extra_x,x[-1]+extra_x],bins=npoints,weights=y)
             # Use bin centers as x points
             width = (bins[1] - bins[0])
@@ -2440,7 +2494,7 @@ def convolute(spc_stick,npoints=1000,hwhm=0.1,broad="Gau",input_bins=False):
                 y = yconv[0::skip]
                 xconv = x
                 yconv = y
-
+                
         extra_factor = extra_factor + 0.05
 
     return [xconv,yconv]
