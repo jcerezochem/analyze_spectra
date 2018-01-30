@@ -41,7 +41,7 @@ stick_type = 'fc'
 def helptext():
     print """
        A python application to analyze TDDFT spectra from g09 logs
-       J.Cerezo, April 2016
+       J.Cerezo, January 2018
         
        INSTRUCTIONS:
          -Get info from a transition: right-mouse-click on a stick
@@ -409,7 +409,7 @@ class AppForm(QMainWindow):
     def on_about(self):
         msg = """
        A python application to analyze FCclasses TI spectra
-       J.Cerezo, May 2016
+       J.Cerezo, January 2018
        
        Version info 
         Git commit: %s
@@ -433,11 +433,15 @@ class AppForm(QMainWindow):
          -Left-mouse-click on a stick: place a label
          -Left-mouse-button (press and hold) on a label: move a label 
          -Right-mouse-click on the label: remove the label
+         
+        *Broadening widgets
+         -Use the bar to tune the broadening, or set the actual value in the cell
+         (note that only works with X-axis is Energy(eV))
         
         *File operations ("File" menu)
          -Save plot: save png figure (also available from matplotlib toolbar)
          -Export to xmgrace: export current plot (including labels) to xmgrace
-         -Import plot: import reference plot
+         -Import plot: import reference (i.e. experimental) plot
          
         *Manipulation of the reference plot:
          -In "Manipulation" menu: shift and scale with respect to simulated
@@ -445,26 +449,8 @@ class AppForm(QMainWindow):
            [X] button: clear spectrum
            [T] buttons: reset to current values
            Scale/Shift cells: manually change the values
+           (note that shift only works with X-axis is Energy(eV))
            
-        *Search transition/progression box
-         Select a given transition of progression
-         The different syntax accepted are
-         
-          Mode1(Quanta1),Mode2(Quanta2)... 
-           e.g. 1(1),2(1) : select the transiton from ground to 1(1),2(1)
-           
-          Mode1(Quanta1),Mode2(P)... 
-           e.g. 1(1),2(P) : select the transiton from ground to 
-                            1(1),2(1); 1(1),2(2); 1(1),2(3)...
-           Note: 
-            (P) can only be specified on one mode
-           
-          Mode1'(Quanta1'),Mode2'(Quanta2')... --> Mode1(Quanta1),Mode2(Quanta2)... 
-           e.g. 1(1) --> 1(1) : select hot transition from 1'(1) to 1(1)
-           Notes:
-            (P) can be specified (on the final modes only)
-            The ground state is specified as 0. E.g. 0-->0 is the 0-0 transition,
-            1(1)-->0 is the M-0 transition and 0-->8(1) is equivalent to 8(1)
         """
         QMessageBox.about(self, "Instructions", msg.strip())
         
