@@ -530,6 +530,62 @@ class AppForm(QMainWindow):
         self.analysis_box.setText(result)
         
         
+    def summary_transtion_LaTeX(self):
+        """
+        Create a table in latex format with the info about
+        the transitions that are labeled
+        """
+        
+        table  = "%"+"Summary of excitations in LaTeX format\n"
+        table += "\\begin{tabular}{cccc}\n"
+        table += "\hline\hline\n"
+        table += "Root & $\lambda$ (nm) & Osc. Str. & Exc. MO \\\\\hline\n"
+        
+        roots=[]
+        for lab in self.labs:
+            roots.append(int(lab.get_text()))
+        roots.sort()
+        
+        # Threshold to select transitions (>10% Restricted, >5% Unrestricted)
+        e=self.states[roots[0]-1].description
+        if "A" in e or "B" in e:
+            thr=5
+        else:
+            thr=10
+        
+        for root in roots:
+            # Get excitation info above thr (first always shown)
+            exc = self.states[root-1].description.split('\n')
+            exc_thr = []
+            for e in exc[:-1]:
+                data = e.split('(')[1]
+                data = data.split(')')[0]
+                if int(data.replace('%','')) >= thr:
+                    exc_thr.append(e)
+                    
+            # Print table entries
+            e = exc[0].replace('%','\\%')
+            e = e.replace('->','$\\rightarrow$')
+            e = e.replace('<-','$\leftarrow$')
+            table += "%i & %.0f & %.4f & %s \\\\\n"%(self.states[root-1].root,
+                                                     self.states[root-1].wavelen,
+                                                     self.states[root-1].oscstr,
+                                                     e)
+            if len(exc_thr) > 1:
+                for e in exc_thr[1:]:
+                    e = e.replace('%','\\%')
+                    e = e.replace('->','$\\rightarrow$')
+                    e = e.replace('<-','$\leftarrow$')
+                    table += " &  &  & %s \\\\\n"%(e)
+                    
+            # Insert a hline when the transition is over
+            table += "\hline %"+"Finished with root %i\n"%(root)
+                    
+        table += "\hline\n"
+        table += "\\end{tabular}"
+
+        self.analysis_box.setText(table)
+
     def shift_to_simulated(self):
         """
         Shift the reference expectrum to match the first moment or Emax of the simulated one
@@ -1949,7 +2005,10 @@ Examples
         momenta_action = self.create_action("&Momenta", 
             slot=self.compute_moments, 
             tip='Compute moments')
-        self.add_actions(self.anlyze_menu, (momenta_action,))
+        tablereport_action = self.create_action("&Table Summary", 
+            slot=self.summary_transtion_LaTeX, 
+            tip='Create a summary of labeled transitions in LateX format')
+        self.add_actions(self.anlyze_menu, (momenta_action,tablereport_action))
         
         # /Manipulate
         self.manip_menu = self.menuBar().addMenu("&Manipulate")
