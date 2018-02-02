@@ -797,10 +797,11 @@ class AppForm(QMainWindow):
         hwhm = float(str)
         fixaxes = self.fixaxes_cb.isChecked()
         
-        fosc2abs= 1054.94
+        # Transoform from osc. strength to integrated molar abs. coeff (integration over E(eV))
+        fosc2abs= 1054.94*27.2116 
         
         x = self.xstick
-        y = self.ystick*fosc2abs # take into account that transitions are in OS nos eps 
+        y = self.ystick*fosc2abs # take into account that transitions are in OS not integrated eps 
         
         # If Intensity, we need to pass to LS before convoluting
         if self.data_type == "Intensity":
@@ -814,7 +815,6 @@ class AppForm(QMainWindow):
         
         # If Intensity, set back from Lineshape
         if self.data_type == "Intensity":
-            print 'Doin'
             # Division x/27.2116 could be included in the factor
             yc *= (xc/27.2116)**n * factor
         
@@ -833,7 +833,8 @@ class AppForm(QMainWindow):
         hwhm = float(str)
         fixaxes = self.fixaxes_cb.isChecked()
         
-        fosc2abs= 1054.94
+        # Transoform from osc. strength to integrated molar abs. coeff (integration over E(eV))
+        fosc2abs= 1054.94*27.2116 
         
         x = self.xstick
         y = self.ystick*fosc2abs # take into account that transitions are in OS nos eps 
