@@ -339,6 +339,11 @@ class AppForm(QMainWindow):
             if not ok:
                 self.statusBar().showMessage('Load data aborted', 2000)
                 return
+            # If we have transmittance <=0, fix it:
+            if data_type == 'Transmittance':
+                zero_ind = [i for i,j in enumerate(y) if j <= 0.0]
+                if len(zero_ind) != 0:
+                    y[zero_ind] = 0.01
             if data_type != self.data_type:
                 # If data_type is not the same as the graph, transform the data
                 n = SpcConstants.exp[self.spc_type]
@@ -402,7 +407,7 @@ class AppForm(QMainWindow):
         
         
     def spc_import_assitant_Yaxis(self):
-        data_type_list = ("Intensity","Transmittance")
+        data_type_list = ("Transmittance","Intensity")
                  
         data_type, ok = QInputDialog.getItem(self, "Import Assistant", 
                             "Data type", data_type_list, 0, False)
