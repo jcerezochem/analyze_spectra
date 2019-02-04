@@ -75,14 +75,17 @@ class vibrational_mode:
         self.frcconst = 0.0
         self.irintens = 0.0
         self.ramanact = None
+        self.type     = ""
 
     def info(self):
         msg = """ Mode:   \t%s 
   =========================
+  Type              :   \t%s
   Frequency (cm-1)  :   \t%s 
   FreqScaled(cm-1)  :   \t%s 
   IR intens         :   \t%s 
         """%(self.ind,
+             self.type,
              self.freq,
              self.freqsc,
              self.irintens)
@@ -272,8 +275,10 @@ class AppForm(QMainWindow):
         self.xaxis_units = 'Wavenumber(cm-1)'
 
         # Data load
-        # Stick transitions (fort.21)
-        self.modes = read_ir_glog(g09file)
+        if cml_args.get("-anh"):
+            self.modes = read_anharm_ir_glog(g09file)
+        else:
+            self.modes = read_ir_glog(g09file)
         # Get xstick,ystick
         self.xstick = np.array([ self.modes[i].freq     for i in range(len(self.modes)) ])
         self.ystick = np.array([ self.modes[i].irintens for i in range(len(self.modes)) ])
@@ -2544,7 +2549,119 @@ def read_ir_glog(g09file):
     for i in range(len(ind)):
         tr.append(vibrational_mode())
         tr[i].ind  = ind[i]
+        tr[i].type = 'Fundamental'
         tr[i].symm = symm[i]
+        if len(freq) != 0:
+            tr[i].freq   = freq[i]
+            tr[i].freqsc = freq[i]
+        if len(redmass) != 0:
+            tr[i].redmass = redmass[i]
+        if len(frcconst) != 0:
+            tr[i].frcconst = frcconst[i]
+        if len(irintens) != 0:
+            tr[i].irintens = irintens[i]
+        if len(ramanact) != 0:
+            tr[i].ramanact = ramanact[i]
+            
+    return tr
+
+def read_anharm_ir_glog(g09file):
+    """
+    Function that reads transition info from TDDFT jobs
+    It outputs:
+    
+    """
+    # Open and read file
+    tr=[]
+    print "Loading anharmonic vibrational info from Gaussian log..."
+    try:
+        f = open(g09file,'r')
+    except:
+        exit("ERROR: Cannot open file: "+g09file)
+        
+    # Find the section with harmonic freqcuencies
+    for line in f:
+        if "Anharmonic Infrared Spectroscopy" in line:
+            break
+    # Next we have the different types of transitions
+    
+    # Fundamentals
+    for line in f:
+        if "Fundamental Bands" in line:
+            break
+    # Fwd 2 additional lines
+    f.next()
+    f.next()
+        
+    # Start reading. available info
+    #---------------------
+    ind  = []
+    symm = []
+    freq = []
+    redmass  = []
+    frcconst = []
+    irintens = []
+    ramanact = []
+    TrType   = []
+    ii = 0
+    for line in f:
+        data = line.split()
+        n    = len(data)
+        if n==0:
+            break
+        else:
+            ii += 1
+            ind.append(ii)
+            freq.append(float(data[2]))
+            irintens.append(float(data[4]))
+            TrType.append("Fundamental")
+            
+    # Overtones
+    for line in f:
+        if "Overtones" in line:
+            break
+    # Fwd 2 additional lines
+    f.next()
+    f.next()
+    for line in f:
+        data = line.split()
+        n    = len(data)
+        if n==0:
+            break
+        else:
+            ii += 1
+            ind.append(ii)
+            freq.append(float(data[2]))
+            irintens.append(float(data[3]))
+            TrType.append("Overtone")
+    
+    # Combination Bands
+    for line in f:
+        if "Combination Bands" in line:
+            break
+    # Fwd 2 additional lines
+    f.next()
+    f.next()
+    for line in f:
+        data = line.split()
+        n    = len(data)
+        if n==0:
+            break
+        else:
+            ii += 1
+            ind.append(ii)
+            freq.append(float(data[3]))
+            irintens.append(float(data[4]))
+            TrType.append("Combination")
+    
+    f.close()
+    # Retrieve all data
+    tr=[]
+    for i in range(len(ind)):
+        tr.append(vibrational_mode())
+        tr[i].ind  = ind[i]
+        tr[i].symm = 'X' #symm[i]
+        tr[i].type = TrType[i]
         if len(freq) != 0:
             tr[i].freq   = freq[i]
             tr[i].freqsc = freq[i]
@@ -2610,8 +2727,13 @@ def convolute(spc_stick,npoints=5000,hwhm=10.0,broad="Lor",input_bins=False):
     
     Retunrs a list of arrays [xconv,yconv]
     """
-    x = spc_stick[0]
-    y = spc_stick[1]
+    x = np.array(spc_stick[0].copy())
+    y = np.array(spc_stick[1].copy())
+    
+    # Reorder
+    order = x.argsort()
+    x = x[order]
+    y = y[order]
    
     # ------------------------------------------------------------------------
     # Convert discrete sticks into a continuous function with an histogram
@@ -2929,16 +3051,19 @@ def get_args():
     final_arguments["-f"]="gauss.log"
     final_arguments["--test"]=False
     final_arguments["-h"]=False
+    final_arguments["-anh"]=False
     # Description of the options
     arg_description = dict()
     arg_description["-f"] ="Gaussian log file name"
     arg_description["--test"]="Load spectra and quit"
     arg_description["-h"]    ="Show this help"
+    arg_description["-anh"]  ="Use anharmonic information in the file"
     # Type for arguments
     arg_type = dict()
     arg_type["-f"] ="int"
     arg_type["--test"]="-"
     arg_type["-h"]    ="-"
+    arg_type["-anh"]  ="-"
     
     # Get list of input args
     input_args_list = []
