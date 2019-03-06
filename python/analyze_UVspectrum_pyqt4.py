@@ -332,17 +332,19 @@ class AppForm(QMainWindow):
             self.refspc_table.setItem(2,1, QTableWidgetItem(str(self.ref_shift)))
             self.refspc_table.setItem(3,1, QTableWidgetItem(str(self.ref_scale)))
             
-            if self.xaxis_units != "Energy(eV)":
-                for i,j in [(2,1)]:
-                    cell = self.refspc_table.item(i,j)
-                    cell.setTextColor(Qt.gray)
-                    cell.setFlags(cell.flags() ^ QtCore.Qt.ItemIsEnabled ^ QtCore.Qt.ItemIsEditable)
-                # Disable manipulations
-                self.shiftref_action.setEnabled(False)
-            else:
-                # Enable manipulations
-                self.shiftref_action.setEnabled(True)
-                self.scaleref_action.setEnabled(True)
+            # It was disabled to manipulate if we were not in eV. Now is is allowed
+            #
+            #if self.xaxis_units != "Energy(eV)":
+                #for i,j in [(2,1)]:
+                    #cell = self.refspc_table.item(i,j)
+                    #cell.setTextColor(Qt.gray)
+                    #cell.setFlags(cell.flags() ^ QtCore.Qt.ItemIsEnabled ^ QtCore.Qt.ItemIsEditable)
+                ## Disable manipulations
+                #self.shiftref_action.setEnabled(False)
+            #else:
+                ## Enable manipulations
+                #self.shiftref_action.setEnabled(True)
+                #self.scaleref_action.setEnabled(True)
 
 
     #==========================================================
@@ -829,6 +831,8 @@ class AppForm(QMainWindow):
         
         
     def update_convolute(self):
+        eV2cm1=8068.5
+        
         str = unicode(self.broadbox.text())
         hwhm = float(str)
         fixaxes = self.fixaxes_cb.isChecked()
@@ -836,8 +840,18 @@ class AppForm(QMainWindow):
         # Transoform from osc. strength to integrated molar abs. coeff (integration over E(eV))
         fosc2abs= 1054.94*27.2116 
         
-        x = self.xstick
+        x = self.xstick.copy() # It's in self.xaxis_units
         y = self.ystick*fosc2abs # take into account that transitions are in OS nos eps 
+        
+        # Transform x to eV
+        if self.xaxis_units == "Energy(eV)":
+            x *= 1.0
+        elif self.xaxis_units == "Wavelength(nm)":
+            x = 1.e7/x
+            x /= eV2cm1
+        elif self.xaxis_units == "Wavenumber(cm-1)":
+            x /= eV2cm1
+            
         
         # If Intensity, we need to pass to LS before convoluting
         if self.data_type == "Intensity":
@@ -853,6 +867,15 @@ class AppForm(QMainWindow):
         if self.data_type == "Intensity":
             # Division x/27.2116 could be included in the factor
             yc *= (xc/27.2116)**n * factor
+            
+        # Transform back x from eV
+        if self.xaxis_units == "Energy(eV)":
+            xc *= 1.0
+        elif self.xaxis_units == "Wavelength(nm)":
+            xc *= eV2cm1
+            xc = 1e7/xc
+        elif self.xaxis_units == "Wavenumber(cm-1)":
+            xc *= eV2cm1
         
         # Re-Plot convoluted
         #self.spectrum_sim[0].remove()
@@ -904,6 +927,17 @@ class AppForm(QMainWindow):
         return
     
     def shift_spectrum(self,x,y,shift):
+        eV2cm1=8068.5
+        
+        # Transform x to eV
+        if self.xaxis_units == "Energy(eV)":
+            x *= 1.0
+        elif self.xaxis_units == "Wavelength(nm)":
+            x = 1.e7/x
+            x /= eV2cm1
+        elif self.xaxis_units == "Wavenumber(cm-1)":
+            x /= eV2cm1
+        
         # If Intensity, we need to pass to LS before shifting
         if self.data_type == "Intensity":
             n = SpcConstants.exp[self.spc_type]
@@ -915,6 +949,15 @@ class AppForm(QMainWindow):
         if self.data_type == "Intensity":
             # Division x/27.2116 could be included in the factor
             y *= (x/27.2116)**n * factor
+            
+        # Transform back x from eV
+        if self.xaxis_units == "Energy(eV)":
+            x *= 1.0
+        elif self.xaxis_units == "Wavelength(nm)":
+            x *= eV2cm1
+            x = 1.e7/x
+        elif self.xaxis_units == "Wavenumber(cm-1)":
+            x *= eV2cm1
         
         return x,y
         
@@ -1399,36 +1442,39 @@ class AppForm(QMainWindow):
             self.set_axis_labels()
             self.canvas.draw()
                 
-            # Only allow change convolution in eV
-            # and shift ref spectrum
-            if self.xaxis_units != "Energy(eV)":
-                # Deactivate convolution controls
-                self.inputBins_cb.setEnabled(False)
-                #self.broadbox.setTextColor(Qt.gray)
-                self.broadbox.setEnabled(False)
-                self.slider.setEnabled(False)
-                self.select_broad.setEnabled(False)
-                if self.spectrum_ref and current_xaxis_units == "Energy(eV)":
-                    for i,j in [(2,1)]:
-                        cell = self.refspc_table.item(i,j)
-                        cell.setTextColor(Qt.gray)
-                        cell.setFlags(cell.flags() ^ QtCore.Qt.ItemIsEnabled ^ QtCore.Qt.ItemIsEditable)
-                    # Disable manipulations
-                    self.shiftref_action.setEnabled(False)
-            else:
-                # Activate convolution controls
-                self.inputBins_cb.setEnabled(True)
-                #self.broadbox.setTextColor(Qt.black)
-                self.broadbox.setEnabled(True)
-                self.slider.setEnabled(True)
-                self.select_broad.setEnabled(True)
-                if self.spectrum_ref and current_xaxis_units != "Energy(eV)":
-                    for i,j in [(2,1)]:
-                        cell = self.refspc_table.item(i,j)
-                        cell.setTextColor(Qt.black)
-                        cell.setFlags(cell.flags() ^ QtCore.Qt.ItemIsEnabled ^ QtCore.Qt.ItemIsEditable)
-                    # Disable manipulations
-                    self.shiftref_action.setEnabled(True)
+            # Convolution/shift was only allowed with energy in eV
+            # Now it can be done with any x units
+            # -----
+            ## Only allow change convolution in eV
+            ## and shift ref spectrum
+            #if self.xaxis_units != "Energy(eV)":
+                ## Deactivate convolution controls
+                #self.inputBins_cb.setEnabled(False)
+                ##self.broadbox.setTextColor(Qt.gray)
+                #self.broadbox.setEnabled(False)
+                #self.slider.setEnabled(False)
+                #self.select_broad.setEnabled(False)
+                #if self.spectrum_ref and current_xaxis_units == "Energy(eV)":
+                    #for i,j in [(2,1)]:
+                        #cell = self.refspc_table.item(i,j)
+                        #cell.setTextColor(Qt.gray)
+                        #cell.setFlags(cell.flags() ^ QtCore.Qt.ItemIsEnabled ^ QtCore.Qt.ItemIsEditable)
+                    ## Disable manipulations
+                    #self.shiftref_action.setEnabled(False)
+            #else:
+                ## Activate convolution controls
+                #self.inputBins_cb.setEnabled(True)
+                ##self.broadbox.setTextColor(Qt.black)
+                #self.broadbox.setEnabled(True)
+                #self.slider.setEnabled(True)
+                #self.select_broad.setEnabled(True)
+                #if self.spectrum_ref and current_xaxis_units != "Energy(eV)":
+                    #for i,j in [(2,1)]:
+                        #cell = self.refspc_table.item(i,j)
+                        #cell.setTextColor(Qt.black)
+                        #cell.setFlags(cell.flags() ^ QtCore.Qt.ItemIsEnabled ^ QtCore.Qt.ItemIsEditable)
+                    ## Disable manipulations
+                    #self.shiftref_action.setEnabled(True)
             
                 
     def table_buttons_action(self,i,j):
