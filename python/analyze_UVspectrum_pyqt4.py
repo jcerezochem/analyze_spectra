@@ -1264,6 +1264,8 @@ class AppForm(QMainWindow):
         
         
     def update_data_type(self):
+        eV2cm1=8068.5
+        
         current_data_type = self.data_type
         self.data_type = self.select_data_type.currentText()
         
@@ -1289,7 +1291,15 @@ class AppForm(QMainWindow):
             self.spectrum_sim[0].set_ydata(y)
             
             if self.spectrum_ref:
-                x = self.spectrum_ref[0].get_xdata()
+                x = self.spectrum_ref[0].get_xdata().copy()
+                # Transform x to eV
+                if self.xaxis_units == "Energy(eV)":
+                    x *= 1.0
+                elif self.xaxis_units == "Wavelength(nm)":
+                    x = 1.e7/x
+                    x /= eV2cm1
+                elif self.xaxis_units == "Wavenumber(cm-1)":
+                    x /= eV2cm1
                 y = self.spectrum_ref[0].get_ydata()
                 if self.data_type == "Lineshape":
                     # Division x/27.2116 could be included in the factor
