@@ -522,7 +522,7 @@ if __name__ == '__main__':
     import sys
 
     # Constants
-    OscStr_to_Eps = 1054.94478
+    OscStr_to_Eps = 1054.94478*27.2116
 
     # Get valiables
     args = get_args()
@@ -568,7 +568,7 @@ if __name__ == '__main__':
             itrans += 1
             data = line.split()
             # Store data in a dict: key: transition; val: coeff
-            state_trans[istate-1][data[0]+data[1]] = float(data[2])
+            state_trans[istate-1][data[0]+data[1]] = float(data[-1])
 
         # Only read the first job if we already have read transitions
         if "Normal termination" in line and len(ener) != 0:
@@ -615,8 +615,10 @@ if __name__ == '__main__':
     # Plot stick spectrum
     line = ax.vlines(xs,zero,ys,linewidths=1,color='k',picker=5)
 
-    #Convolution (in energy(eV))
-    xc,yc = convolute([ener,ys],hwhm=hwhm,broad=brfunct)
+    #Convolution: in Lineshape and in energy(eV) range
+    xc,yc = convolute([ener,ys/ener],hwhm=hwhm,broad=brfunct)
+    # Convert back linshape to intensity
+    yc *= xc
     # Convert E[eV] to Wavelength[nm]
     xc = xc/1.23981e-4 # eV->cm-1
     xc = 1e7/xc        # cm-1 -> nm
