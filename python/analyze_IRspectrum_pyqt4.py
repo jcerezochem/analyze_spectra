@@ -287,7 +287,7 @@ class AppForm(QMainWindow):
         self.load_ir_sticks()
         self.set_axis_labels()
         self.load_convoluted()
-        #self.load_legend()        
+        self.load_legend()        
         
         if cml_args.get("--test"):
             sys.exit()
@@ -358,6 +358,7 @@ class AppForm(QMainWindow):
                         y = 100. * 10**(-y)
                 elif data_type == 'Transmittance':
                     if self.data_type == "Intensity":
+                        y[y<=0] = 0.01
                         y = -np.log10(y/100.)
             
             # Update Table
@@ -767,7 +768,7 @@ class AppForm(QMainWindow):
             self.stickspc.append(None)
             self.stickspc = None
         else:
-            self.stickspc = self.axes.vlines(x,z,y,linewidths=1,picker=5,color='gray')
+            self.stickspc = self.axes.vlines(x,z,y,linewidths=1,picker=5,color='gray',label='Sticks')
             xmin = min([xmin,min(x)])
             xmax = max([xmax,max(x)])
             ymin = min([ymin,min(y)])
@@ -788,13 +789,10 @@ class AppForm(QMainWindow):
         
         #Legends management
         # First get lines from both axes
-        lns  = list(filter(lambda x:x,self.stickspc))+self.spectrum_sim
+        lns  = [self.stickspc]+self.spectrum_sim
         labs = [l.get_label() for l in lns]
         # Set the location according to the type of calculation
-        if self.spc_type in ["abs","ecd"]:
-            position="upper right"
-        else:
-            position="upper left"
+        position="upper right"
         self.legend = self.axes.legend(lns,labs,loc=position, fancybox=True, shadow=True)
         self.LegendType = type(self.legend)
         self.legend.get_frame().set_alpha(0.4)
@@ -846,6 +844,7 @@ class AppForm(QMainWindow):
             y /= x**n 
         elif self.data_type == "Transmittance":
             # First convert into Intensity
+            y[y<=0] = 0.01
             y = -np.log10(y/100.)/self.conc
             y /= x**n 
         
@@ -888,6 +887,7 @@ class AppForm(QMainWindow):
             y /= x**n 
         elif self.data_type == "Transmittance":
             # First convert into Intensity
+            y[y<=0] = 0.01
             y = -np.log10(y/100.)/self.conc
             y /= x**n 
                    
@@ -1006,6 +1006,7 @@ class AppForm(QMainWindow):
             y /= x**n 
         elif self.data_type == "Transmittance":
             # First convert into Intensity
+            y[y<=0] = 0.01
             y = -np.log10(y/100.)
             y /= x**n 
         x = x + shift
