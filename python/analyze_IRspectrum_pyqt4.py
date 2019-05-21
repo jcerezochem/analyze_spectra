@@ -890,9 +890,19 @@ class AppForm(QMainWindow):
             # First convert into Intensity
             y = -np.log10(y/100.)/self.conc
             y /= x**n 
-        
+                   
         #Convolution
-        xc,yc = convolute([x,y],hwhm=hwhm,broad=self.broadening,input_bins=False)
+        if self.broadening == 'Drude':
+            # See Astrophys. J., 801:34 (2015)
+            # Estimate bradening in Wavelength (micro) in the central position
+            Ndata = len(x)
+            x0 = x[Ndata/2]
+            hwhm_um = 1e6/(x0-hwhm_um/2.) - 1e6/(x0+hwhm_um/2.)
+            # This works in Wavelength (micro)
+            x = 1e6/x
+            xc,yc = convolute([x,y],hwhm=hwhm_um,broad='Lor',input_bins=False)
+        else:
+            xc,yc = convolute([x,y],hwhm=hwhm,broad=self.broadening,input_bins=False)
         
         # If Intensity, set back from Lineshape
         if self.data_type == "Intensity":
