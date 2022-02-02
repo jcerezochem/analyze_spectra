@@ -17,13 +17,21 @@ License: this code is in the public domain
 Last modified: 19.01.2009
 """
 import sys, os, random
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-from PyQt4 import QtCore, QtGui
+# PyQt4
+# from PyQt4.QtCore import *
+# from PyQt4.QtGui import *
+# from PyQt4 import QtCore, QtGui
+# PyQt5
+from PyQt5 import QtGui, QtCore, uic, QtWidgets
+from PyQt5.QtWidgets import QMainWindow, QApplication, QAction, QWidget, QLineEdit, QPushButton, QComboBox, \
+                            QSlider, QCheckBox, QLabel, QFrame, QTextEdit, QTableWidget, QTableWidgetItem,  \
+                            QVBoxLayout, QHBoxLayout, QGridLayout, QInputDialog, QFileDialog, QMessageBox
+from PyQt5.QtGui import QFont
+from PyQt5.QtCore import *
 
 import numpy as np
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 #from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import matplotlib
@@ -261,9 +269,13 @@ class AppForm(QMainWindow):
             path=""
         else:
             file_choices = r"Gaussian log file (*.log);; All files (*)"
-            g09file = unicode(QFileDialog.getOpenFileName(self, 
+            g09file = QFileDialog.getOpenFileName(self, 
                             'Set the location of Gaussian output', '', 
                             file_choices))
+            # Management of QFileDialog output is different in PyQt5
+            #  * Do not use unicode() to wrap the call
+            #  * It is now an array. Take first value
+            g09file = g09file[0]
             if not g09file:
                 return
 
@@ -299,9 +311,13 @@ class AppForm(QMainWindow):
     def save_plot(self):
         file_choices = r"Portable Network Graphics (*.png) (*.png);; All files (*)"
         
-        path = unicode(QFileDialog.getSaveFileName(self, 
+        path = QFileDialog.getOpenFileName(self, 
                         'Save file', '', 
                         file_choices))
+        # Management of QFileDialog output is different in PyQt5
+        #  * Do not use unicode() to wrap the call
+        #  * It is now an array. Take first value
+        path = path[0]
         if path:
             self.canvas.print_figure(path, dpi=100)
             self.statusBar().showMessage('Saved to %s' % path, 2000)
@@ -309,9 +325,13 @@ class AppForm(QMainWindow):
     def open_plot(self):
         file_choices = r"Data file (*.dat) (*.dat);; All files (*)"
         
-        path = unicode(QFileDialog.getOpenFileName(self, 
+        path = QFileDialog.getOpenFileName(self, 
                         'Open spectrum', '', 
                         file_choices))
+        # Management of QFileDialog output is different in PyQt5
+        #  * Do not use unicode() to wrap the call
+        #  * It is now an array. Take first value
+        path = path[0]
         if path:
             self.statusBar().showMessage('Opened %s' % path, 2000)    
             x,y = read_spc_xy(path)
@@ -364,7 +384,10 @@ class AppForm(QMainWindow):
             # Update Table
             self.refspc_table.setItem(1,1, QTableWidgetItem(path.split('/')[-1]))
             cell = self.refspc_table.item(1,1)
-            cell.setTextColor(Qt.black)
+            # PyQt4
+            #cell.setTextColor(Qt.black)
+            # PyQt5
+            cell.setForeground(Qt.black)
             cell.setFlags(cell.flags() ^ QtCore.Qt.ItemIsEnabled ^ QtCore.Qt.ItemIsEditable)
                 
             self.load_experiment_spc(x,y)
@@ -378,7 +401,10 @@ class AppForm(QMainWindow):
             #if self.xaxis_units != "Energy(eV)":
                 #for i,j in [(2,1)]:
                     #cell = self.refspc_table.item(i,j)
-                    #cell.setTextColor(Qt.gray)
+                    ## PyQt4
+                    ##cell.setTextColor(Qt.gray)
+                    ## PyQt5
+                    #cell.setForeground(Qt.gray)
                     #cell.setFlags(cell.flags() ^ QtCore.Qt.ItemIsEnabled ^ QtCore.Qt.ItemIsEditable)
                 ## Disable manipulations
                 #self.shiftref_action.setEnabled(False)
@@ -434,10 +460,14 @@ class AppForm(QMainWindow):
             return
         # File Dialog
         file_choices = "xmgrace graph (*.agr) (*.agr);; All files (*)"
-        
-        path = unicode(QFileDialog.getSaveFileName(self, 
+
+        path = QFileDialog.getOpenFileName(self, 
                         'Export to file', '', 
                         file_choices))
+        # Management of QFileDialog output is different in PyQt5
+        #  * Do not use unicode() to wrap the call
+        #  * It is now an array. Take first value
+        path = path[0]
         if path:
             if self.spectrum_ref:
                 spc = self.spectrum_sim+self.spectrum_ref
@@ -1577,28 +1607,34 @@ class AppForm(QMainWindow):
             if self.xaxis_units != "Energy(eV)":
                 # Deactivate convolution controls
                 self.inputBins_cb.setEnabled(False)
-                #self.broadbox.setTextColor(Qt.gray)
+                #self.broadbox.setForeground(Qt.gray)
                 self.broadbox.setEnabled(False)
                 self.slider.setEnabled(False)
                 self.select_broad.setEnabled(False)
                 if self.spectrum_ref and current_xaxis_units == "Energy(eV)":
                     for i,j in [(2,1)]:
                         cell = self.refspc_table.item(i,j)
-                        cell.setTextColor(Qt.gray)
+                        # PyQt4
+                        #cell.setTextColor(Qt.gray)
+                        # PyQt5
+                        cell.setForeground(Qt.gray)
                         cell.setFlags(cell.flags() ^ QtCore.Qt.ItemIsEnabled ^ QtCore.Qt.ItemIsEditable)
                     # Disable manipulations
                     self.shiftref_action.setEnabled(False)
             else:
                 # Activate convolution controls
                 self.inputBins_cb.setEnabled(True)
-                #self.broadbox.setTextColor(Qt.black)
+                #self.broadbox.setForeground(Qt.black)
                 self.broadbox.setEnabled(True)
                 self.slider.setEnabled(True)
                 self.select_broad.setEnabled(True)
                 if self.spectrum_ref and current_xaxis_units != "Energy(eV)":
                     for i,j in [(2,1)]:
                         cell = self.refspc_table.item(i,j)
-                        cell.setTextColor(Qt.black)
+                        # PyQt4
+                        #cell.setTextColor(Qt.black)
+                        # PyQt5
+                        cell.setForeground(Qt.black)
                         cell.setFlags(cell.flags() ^ QtCore.Qt.ItemIsEnabled ^ QtCore.Qt.ItemIsEditable)
                     # Disable manipulations
                     self.shiftref_action.setEnabled(True)
@@ -1622,7 +1658,10 @@ class AppForm(QMainWindow):
             for i,j in [(1,1),(2,1),(3,1)]:
                 self.refspc_table.setItem(i,j, QTableWidgetItem(celllabel[i-1]))
                 cell = self.refspc_table.item(i,j)
-                cell.setTextColor(Qt.black)
+                # PyQt4
+                #cell.setTextColor(Qt.black)
+                # PyQt5
+                cell.setForeground(Qt.black)
                 cell.setFlags(cell.flags() ^ QtCore.Qt.ItemIsEnabled ^ QtCore.Qt.ItemIsEditable)
             # Disable manipulations
             self.shiftref_action.setEnabled(False)
@@ -1946,18 +1985,30 @@ Examples
         self.broadbox = QLineEdit()
         self.broadbox.setMinimumWidth(50)
         self.broadbox.setMaximumWidth(50)
-        self.connect(self.broadbox, SIGNAL('editingFinished ()'), self.update_hwhm_from_textbox)
+        # PyQt4 (old-style signals)
+        #self.connect(self.broadbox, SIGNAL('editingFinished ()'), self.update_hwhm_from_textbox)
+        # PyQt5 (new-style signals)
+        self.broadbox.editingFinished.connect(self.update_hwhm_from_textbox)
         
         self.scalebox = QLineEdit()
         self.scalebox.setMinimumWidth(50)
         self.scalebox.setMaximumWidth(50)
-        self.connect(self.scalebox, SIGNAL('editingFinished ()'), self.update_scale_from_textbox)
+        # PyQt4 (old-style signals)
+        #self.connect(self.scalebox, SIGNAL('editingFinished ()'), self.update_scale_from_textbox)
+        # PyQt5 (new-style signals)
+        self.scalebox.editingFinished.connect(self.update_scale_from_textbox)
         self.scalebox.setText('1.0')
         
         clean_button1 = QPushButton("&Clean(Panel)")
-        self.connect(clean_button1, SIGNAL('clicked()'), self.del_stick_marker)
+        # PyQt4 (old-style signals)
+        #self.connect(clean_button1, SIGNAL('clicked()'), self.del_stick_marker)
+        # PyQt5 (new-style signals)
+        clean_button1.clicked.connect(self.del_stick_marker)
         clean_button2 = QPushButton("&Clean(Labels)")
-        self.connect(clean_button2, SIGNAL('clicked()'), self.reset_labels)
+        # PyQt4 (old-style signals)
+        #self.connect(clean_button2, SIGNAL('clicked()'), self.reset_labels)
+        # PyQt5 (new-style signals)
+        clean_button2.clicked.connect(self.reset_labels)
         
         self.select_broad = QComboBox()
         self.select_broad.addItems(["Lor","Gau"])
@@ -1977,7 +2028,10 @@ Examples
         self.slider.setValue(10)
         self.slider.setTracking(True)
         self.slider.setTickPosition(QSlider.TicksBothSides)
-        self.connect(self.slider, SIGNAL('valueChanged(int)'), self.update_hwhm_from_slider)
+        # PyQt4 (old-style signals)
+        #self.connect(self.slider, SIGNAL('valueChanged(int)'), self.update_hwhm_from_slider)
+        # PyQt5 (new-style signals)
+        self.slider.valueChanged.connect(self.update_hwhm_from_slider)
         
         self.fixaxes_cb = QCheckBox("Fix y-axis")
         self.fixaxes_cb.setChecked(False)
@@ -1986,13 +2040,20 @@ Examples
         self.fixlegend_cb = QCheckBox("Fix legend")
         self.fixlegend_cb.setChecked(True)
         self.fixlegend_cb.setMaximumWidth(100)
-        self.connect(self.fixlegend_cb, SIGNAL('stateChanged(int)'), self.update_fixlegend)
+        # PyQt4 (old-style signals)
+        #self.connect(self.fixlegend_cb, SIGNAL('stateChanged(int)'), self.update_fixlegend)
+        # PyQt5 (new-style signals)
+        self.fixlegend_cb.stateChanged.connect(self.update_fixlegend)
         
         self.inputBins_cb = QCheckBox("Input bins")
         self.inputBins_cb.setChecked(True)
         self.inputBins_cb.setMaximumWidth(100)
         # Update when clicking
-        self.connect(self.inputBins_cb, SIGNAL('stateChanged(int)'), self.update_convolute)
+        # Update when clicking
+        # PyQt4 (old-style signals)
+        #self.connect(self.inputBins_cb, SIGNAL('stateChanged(int)'), self.update_convolute)
+        # PyQt5 (new-style signals)
+        self.inputBins_cb.stateChanged.connect(self.update_convolute)
         
         # Labels
         hwhm_label  = QLabel('   HWHM')
@@ -2042,8 +2103,8 @@ Examples
         #font.setWeight(75)
         font.setPointSize(12)
         title = self.refspc_table.item(0,0)
-        title.setBackgroundColor(Qt.lightGray)
-        title.setTextColor(Qt.black)
+        title.setBackground(Qt.lightGray)
+        title.setForeground(Qt.black)
         title.setFont(font)
         title.setTextAlignment(Qt.AlignCenter)
         title.setFlags(title.flags() ^ QtCore.Qt.ItemIsEnabled ^ QtCore.Qt.ItemIsEditable)
@@ -2055,8 +2116,8 @@ Examples
         for i,j in cellids[0]:
             self.refspc_table.setItem(i,j, QTableWidgetItem(celllabel[i-1]))
             cell = self.refspc_table.item(i,j)
-            cell.setBackgroundColor(Qt.gray)
-            cell.setTextColor(Qt.white)
+            cell.setBackground(Qt.gray)
+            cell.setForeground(Qt.white)
             cell.setFont(font)
             # Set non editable. See: http://stackoverflow.com/questions/2574115/how-to-make-a-column-in-qtablewidget-read-only
             #cell.setFlags(cell.flags() ^ Qt.ItemIsEditable)
@@ -2066,7 +2127,7 @@ Examples
         for i,j in cellids[1]:
             self.refspc_table.setItem(i,j, QTableWidgetItem(celllabel[i-1]))
             cell = self.refspc_table.item(i,j)
-            cell.setTextColor(Qt.black)
+            cell.setForeground(Qt.black)
             # Set non editable. See: http://stackoverflow.com/questions/2574115/how-to-make-a-column-in-qtablewidget-read-only
             cell.setFlags(cell.flags() ^ QtCore.Qt.ItemIsEnabled ^ QtCore.Qt.ItemIsEditable)
         ## Last column
@@ -2078,14 +2139,14 @@ Examples
             cell.setFlags(cell.flags() ^ QtCore.Qt.ItemIsEditable ^ QtCore.Qt.ItemIsSelectable)
         ## Tune the X button
         xbutton = self.refspc_table.item(1,2)
-        xbutton.setBackgroundColor(Qt.red)
+        xbutton.setBackground(Qt.red)
         ## Tune the Tare buttons
         tbutton = self.refspc_table.item(2,2)
-        tbutton.setBackgroundColor(Qt.blue)
-        tbutton.setTextColor(Qt.white)
+        tbutton.setBackground(Qt.blue)
+        tbutton.setForeground(Qt.white)
         tbutton = self.refspc_table.item(3,2)
-        tbutton.setBackgroundColor(Qt.blue)
-        tbutton.setTextColor(Qt.white)
+        tbutton.setBackground(Qt.blue)
+        tbutton.setForeground(Qt.white)
         # Connecting cellPressed(int,int), passing its arguments to the called function
         # My function definition uses the irow and icol pressed:
         # self.table_buttons_action(self,irow,icol)
@@ -2268,9 +2329,13 @@ Examples
                 target.addAction(action)
                 
 
+    # PyQt4
+    #def create_action(  self, text, slot=None, shortcut=None, 
+    #                    icon=None, tip=None, checkable=False, 
+    #                    signal="triggered()"):
+    # PyQt5
     def create_action(  self, text, slot=None, shortcut=None, 
-                        icon=None, tip=None, checkable=False, 
-                        signal="triggered()"):
+                        icon=None, tip=None, checkable=False):
         action = QAction(text, self)
         if icon is not None:
             action.setIcon(QIcon(":/%s.png" % icon))
@@ -2280,7 +2345,10 @@ Examples
             action.setToolTip(tip)
             action.setStatusTip(tip)
         if slot is not None:
-            self.connect(action, SIGNAL(signal), slot)
+            # PyQt4 (old-style signals)
+            #self.connect(action, SIGNAL(signal), slot)
+            # PyQt5 (new-style signals)
+            action.triggered.connect(slot)
         if checkable:
             action.setCheckable(True)
         return action
