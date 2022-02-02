@@ -3205,7 +3205,7 @@ def get_args():
         
     
 def main():
-    app = QtGui.QApplication(sys.argv)
+    app = QApplication(sys.argv)
     form = AppForm()
     form.show()
     app.exec_()

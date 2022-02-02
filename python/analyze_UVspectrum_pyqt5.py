@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # -*- coding: utf8 -*-
 
 """
@@ -551,10 +551,13 @@ class AppForm(QMainWindow):
     def summary_transtion_LaTeX(self):
         """
         Create a table in latex format with the info about
-        the transitions that are labeled
+        the transitions that are labeled.
+        Build whole stanalone tex file
         """
         
-        table  = "%"+"Summary of excitations in LaTeX format\n"
+        table  = "\documentclass{standalone}\n"
+        table += "\\begin{document}\n\n"
+        table += "%"+"Summary of excitations in LaTeX format\n"
         table += "\\begin{tabular}{cccc}\n"
         table += "\hline\hline\n"
         table += "Root & $\lambda$ (nm) & Osc. Str. & Exc. MO \\\\\hline\n"
@@ -600,7 +603,8 @@ class AppForm(QMainWindow):
             table += "\hline %"+"Finished with root %i\n"%(root)
                     
         table += "\hline\n"
-        table += "\\end{tabular}"
+        table += "\\end{tabular}\n\n"
+        table += "\end{document}"
 
         self.analysis_box.setText(table)
 
@@ -2507,7 +2511,7 @@ def read_td_glog(g09file):
     #  1. Use sorted with key=f, where f is a function that filters the input to sorted
     for i in range(len(tr)):
         abs_coeff = [ abs(tr[i].exc_coeff[j]) for j in range(len(tr[i].exc_coeff)) ]
-        Z = zip(abs_coeff,tr[i].exc_coeff,tr[i].exc_label)
+        Z = list(zip(abs_coeff,tr[i].exc_coeff,tr[i].exc_label))
         Z.sort(reverse=True)
         tr[i].exc_coeff=[ Z[j][1] for j in range(len(Z)) ]
         tr[i].exc_label=[ Z[j][2] for j in range(len(Z)) ]
@@ -2967,7 +2971,7 @@ def get_args():
         
     
 def main():
-    app = QtGui.QApplication(sys.argv)
+    app = QApplication(sys.argv)
     form = AppForm()
     form.show()
     app.exec_()
