@@ -12,5 +12,9 @@ python-update-version-local:
 	@./get_git_version.sh || echo "Reusing version file"
 
 python-standalone-local:
-	pyinstaller analyze_UVspectrum_pyqt4.py --onefile
+	pyinstaller analyze_UVspectrum_pyqt5.py --onefile
+	pyinstaller analyze_IRspectrum_pyqt5.py --onefile
+
+clean:
+	rm dist/ build/ *.spec -rv; sleep 0
 
