@@ -8,10 +8,10 @@ Tools provided:
  * analyze_UVspectra.py: convolute spectrum and optionally show the plot 
                          for (basic) analysis
 
- * analyze_UVspectra_pyqt4.py: open a Qt4 GUI for more refined analysis
+ * analyze_UVspectra_pyqt5.py: open a Qt5 GUI for more refined analysis
 
  * analyze_IRspectra.py: convolute spectrum and optionally show the plot
                          for (basic) analysis
 
- * analyze_IRspectra_pyqt4.py: open a Qt4 GUI for more refined analysis
+ * analyze_IRspectra_pyqt5.py: open a Qt5 GUI for more refined analysis
 

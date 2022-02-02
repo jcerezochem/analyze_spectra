@@ -47,7 +47,7 @@ except:
 stick_type = 'fc'
 
 def helptext():
-    print """
+    print("""
        A python application to analyze IR spectra from g09 logs/fchk
        J.Cerezo, January 2018
         
@@ -60,7 +60,7 @@ def helptext():
          -Clean info about transitons: left-mouse-click on the title
          -Clean all labels: right-mouse-click on the title
          -Export to xmgrace using the 'File->Export to xmagrace' option
-    """
+    """)
 
 class SpcConstants:
     exp = {"abs":1,"ecd":1,"emi":3,"cpl":3}
@@ -271,7 +271,7 @@ class AppForm(QMainWindow):
             file_choices = r"Gaussian log file (*.log);; All files (*)"
             g09file = QFileDialog.getOpenFileName(self, 
                             'Set the location of Gaussian output', '', 
-                            file_choices))
+                            file_choices)
             # Management of QFileDialog output is different in PyQt5
             #  * Do not use unicode() to wrap the call
             #  * It is now an array. Take first value
@@ -311,9 +311,9 @@ class AppForm(QMainWindow):
     def save_plot(self):
         file_choices = r"Portable Network Graphics (*.png) (*.png);; All files (*)"
         
-        path = QFileDialog.getOpenFileName(self, 
+        path = QFileDialog.getSaveFileName(self, 
                         'Save file', '', 
-                        file_choices))
+                        file_choices)
         # Management of QFileDialog output is different in PyQt5
         #  * Do not use unicode() to wrap the call
         #  * It is now an array. Take first value
@@ -327,7 +327,7 @@ class AppForm(QMainWindow):
         
         path = QFileDialog.getOpenFileName(self, 
                         'Open spectrum', '', 
-                        file_choices))
+                        file_choices)
         # Management of QFileDialog output is different in PyQt5
         #  * Do not use unicode() to wrap the call
         #  * It is now an array. Take first value
@@ -461,9 +461,9 @@ class AppForm(QMainWindow):
         # File Dialog
         file_choices = "xmgrace graph (*.agr) (*.agr);; All files (*)"
 
-        path = QFileDialog.getOpenFileName(self, 
+        path = QFileDialog.getSaveFileName(self, 
                         'Export to file', '', 
-                        file_choices))
+                        file_choices)
         # Management of QFileDialog output is different in PyQt5
         #  * Do not use unicode() to wrap the call
         #  * It is now an array. Take first value
@@ -861,8 +861,8 @@ class AppForm(QMainWindow):
         In this case, there are not input_bins as in fort.22 (FCclasses)
         but the actual sticks
         """
-        str = unicode(self.broadbox.text())
-        hwhm = float(str)
+        text = str(self.broadbox.text())
+        hwhm = float(text)
         fixaxes = self.fixaxes_cb.isChecked()
         
         x = self.xstick.copy()*self.scale
@@ -904,8 +904,8 @@ class AppForm(QMainWindow):
         self.canvas.draw()
         
     def update_convolute(self):
-        str = unicode(self.broadbox.text())
-        hwhm = float(str)
+        txt = str(self.broadbox.text())
+        hwhm = float(txt)
         fixaxes = self.fixaxes_cb.isChecked()
         
         x = self.xstick.copy()*self.scale
@@ -1266,7 +1266,7 @@ class AppForm(QMainWindow):
         for labref in self.labs:
             lab = self.labs[labref]
             if lab == agrlabel:
-                print "This label was already defined"
+                print("This label was already defined")
                 set_lab = False
         if set_lab:
             # The dictionary labs relates each labelref(annotation) to 
@@ -1301,8 +1301,8 @@ class AppForm(QMainWindow):
         hwhmmax = 50.0
         slidermin = 1   # this is not changed
         slidermax = 100 # this is not changed
-        str = unicode(self.broadbox.text())
-        hwhm = float(str)
+        txt = str(self.broadbox.text())
+        hwhm = float(txt)
         sliderval = int((slidermax-slidermin)/(hwhmmax-hwhmmin) * (hwhm-hwhmmin) + slidermin)
         sliderval = min(sliderval,slidermax)
         sliderval = max(sliderval,slidermin)
@@ -1310,12 +1310,13 @@ class AppForm(QMainWindow):
         self.update_convolute()
         
     def update_scale_from_textbox(self):
-        str = unicode(self.scalebox.text())
+        text = str(self.scalebox.text())
+        hwhm = float(text)
         self.scale = float(str)
         if self.scale == 0.0:
             self.scalebox.setText('1.0')
-            str = unicode(self.scalebox.text())
-            self.scale = float(str)
+            text = str(self.scalebox.text())
+            self.scale = float(text)
         self.update_scale()
         
         
@@ -1647,9 +1648,9 @@ class AppForm(QMainWindow):
             return
         if (i,j) == (1,2):
             clear_msg = "Clear reference spectrum?"
-            reply = QtGui.QMessageBox.question(self, 'Clear Spectrum', 
-                         clear_msg, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-            if reply == QtGui.QMessageBox.No:
+            reply = QMessageBox.question(self, 'Clear Spectrum', 
+                         clear_msg, QMessageBox.Yes, QMessageBox.No)
+            if reply == QMessageBox.No:
                 return            
             self.spectrum_ref[0].remove()
             self.spectrum_ref = None
@@ -1672,9 +1673,9 @@ class AppForm(QMainWindow):
             if self.xaxis_units != "Energy(eV)":
                 return
             msg = "Reset shift to current value?"
-            reply = QtGui.QMessageBox.question(self, 'Reset Shift', 
-                         msg, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-            if reply == QtGui.QMessageBox.No:
+            reply = QMessageBox.question(self, 'Reset Shift', 
+                         msg, QMessageBox.Yes, QMessageBox.No)
+            if reply == QMessageBox.No:
                 return      
             self.ref_shift = 0.0
             self.refspc_table.setItem(2,1, QTableWidgetItem(str(self.ref_shift)))
@@ -1682,9 +1683,9 @@ class AppForm(QMainWindow):
         elif (i,j) == (3,2):
             # Tare the scale
             msg = "Reset scale to current value?"
-            reply = QtGui.QMessageBox.question(self, 'Reset Scale', 
-                         msg, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-            if reply == QtGui.QMessageBox.No:
+            reply = QMessageBox.question(self, 'Reset Scale', 
+                         msg, QMessageBox.Yes, QMessageBox.No)
+            if reply == QMessageBox.No:
                 return      
             self.ref_scale = 1.0
             self.refspc_table.setItem(3,1, QTableWidgetItem(str(self.ref_scale)))
@@ -1848,8 +1849,8 @@ Examples
                 fquanta[pindex] = i
             for tr in fcclass:
                 if iclass != 0:
-                    mi_srch,qi_srch = zip(*sorted(zip(imodes,iquanta)))
-                    mi_tr,qi_tr     = zip(*sorted(zip(tr.init[:iclass],tr.qinit[:iclass])))
+                    mi_srch,qi_srch = list(zip(*sorted(zip(imodes,iquanta))))
+                    mi_tr,qi_tr     = list(zip(*sorted(zip(tr.init[:iclass],tr.qinit[:iclass]))))
                 else:
                     mi_srch,qi_srch = 0,0
                     mi_tr,qi_tr     = 0,0
@@ -1860,8 +1861,8 @@ Examples
                     # zeroes
                     if len(tr.final) == 0:
                         continue
-                    mf_srch,qf_srch = zip(*sorted(zip(fmodes,fquanta)))
-                    mf_tr,qf_tr     = zip(*sorted(zip(tr.final[:fclass],tr.qfinal[:fclass])))
+                    mf_srch,qf_srch = list(zip(*sorted(zip(fmodes,fquanta))))
+                    mf_tr,qf_tr     = list(zip(*sorted(zip(tr.final[:fclass],tr.qfinal[:fclass]))))
                 else:
                     mf_srch,qf_srch = 0,0
                     mf_tr,qf_tr     = 0,0
@@ -1886,14 +1887,14 @@ Examples
                 fquanta.pop(pindex)
                 for tr in fcclass:
                     if iclass != 0:
-                        mi_srch,qi_srch = zip(*sorted(zip(imodes,iquanta)))
-                        mi_tr,qi_tr     = zip(*sorted(zip(tr.init[:iclass],tr.qinit[:iclass])))
+                        mi_srch,qi_srch = list(zip(*sorted(zip(imodes,iquanta))))
+                        mi_tr,qi_tr     = list(zip(*sorted(zip(tr.init[:iclass],tr.qinit[:iclass]))))
                     else:
                         mi_srch,qi_srch = 0,0
                         mi_tr,qi_tr     = 0,0
                     if fclass != 0:
-                        mf_srch,qf_srch = zip(*sorted(zip(fmodes,fquanta)))
-                        mf_tr,qf_tr     = zip(*sorted(zip(tr.final[:fclass],tr.qfinal[:fclass])))
+                        mf_srch,qf_srch = list(zip(*sorted(zip(fmodes,fquanta))))
+                        mf_tr,qf_tr     = list(zip(*sorted(zip(tr.final[:fclass],tr.qfinal[:fclass]))))
                     else:
                         mf_srch,qf_srch = 0,0
                         mf_tr,qf_tr     = 0,0
@@ -2373,7 +2374,7 @@ def read_fort21(fort21file,MaxClass):
     """
     # Open and read file
     tr=[]
-    print "Loading transitions (fort.21)..."
+    print("Loading transitions (fort.21)...")
     try:
         f = open(fort21file,'r')
     except:
@@ -2383,7 +2384,7 @@ def read_fort21(fort21file,MaxClass):
     itrans = 0
     for line in f:
         if "INDEX" in line:
-            line = f.next()
+            line = next(f)
             data = line.split()
             tr.append(spectral_transition())
             tr[itrans].motherstate = 1
@@ -2531,21 +2532,21 @@ def read_fort21(fort21file,MaxClass):
     loadC=True
     total_transitions = 0
     nclass_list = [nclass0,nclass1,nclass2,nclass3,nclass4,nclass5,nclass6,nclass7]
-    print 'Transitions read:'
-    print ' Class     N. trans.         Load?  '
+    print('Transitions read:')
+    print(' Class     N. trans.         Load?  ')
     for i,nclass in enumerate(nclass_list):
         if MaxClass<i: 
             loadC=False
         total_transitions += nclass
-        print ' C{0}        {1:5d}             {2}   '.format(i,nclass,loadC)
+        print(' C{0}        {1:5d}             {2}   '.format(i,nclass,loadC))
         if MaxClass<i: 
             nclass_list[i]=0
-    print     ' Hot       {0:5d}             {1}   '.format(nhot,True)
+    print(' Hot       {0:5d}             {1}   '.format(nhot,True))
     nclass_list.append(nhot)
     total_transitions += nhot
-    print 'Total transitions : ',(total_transitions)
-    print 'Loaded transitions: ',(itrans+1)
-    print ''
+    print('Total transitions : ',(total_transitions))
+    print('Loaded transitions: ',(itrans+1))
+    print('')
     #========== Done with fort.21 ====================================
 
     # This is a conversion from old stile reader to class_list
@@ -2566,7 +2567,7 @@ def read_ir_glog(g09file):
     """
     # Open and read file
     tr=[]
-    print "Loading vibrational modes from Gaussian log..."
+    print("Loading vibrational modes from Gaussian log...")
     try:
         f = open(g09file,'r')
     except:
@@ -2652,7 +2653,7 @@ def read_anharm_ir_glog(g09file):
     """
     # Open and read file
     tr=[]
-    print "Loading anharmonic vibrational info from Gaussian log..."
+    print("Loading anharmonic vibrational info from Gaussian log...")
     try:
         f = open(g09file,'r')
     except:
@@ -2765,7 +2766,7 @@ def read_spc_xy(filename,fromsection=None):
     moment we leave it like that
     """
     # Open and read file
-    print "Loading spectral data from '"+filename+"'..."
+    print("Loading spectral data from '"+filename+"'...")
     try:
         f = open(filename,'r')
     except:
@@ -2908,83 +2909,83 @@ def export_xmgrace(filename,ax,sticks,labs,ax2=None,specs=None):
 
     f = open(filename,'w')
     
-    print >> f, "# XMGRACE CREATED BY FCC_ANALYZER"
-    print >> f, "# Only data and labels. Format will"
-    print >> f, "# be added by your default xmgrace"
-    print >> f, "# defaults (including colors, fonts...)"
-    print >> f, "# Except the followins color scheme:"
-    print >> f, '@map color 0  to (255, 255, 255), "white"'
-    print >> f, '@map color 1  to (0, 0, 0), "black"'
-    print >> f, '@map color 2  to (0, 0, 255), "blue"'
-    print >> f, '@map color 3  to (255, 0, 0), "red"'
-    print >> f, '@map color 4  to (0, 139, 0), "green4"'
-    print >> f, '@map color 5  to (0, 255, 255), "cyan"'
-    print >> f, '@map color 6  to (255, 0, 255), "magenta"'
-    print >> f, '@map color 7  to (188, 143, 143), "brown"'
-    print >> f, '@map color 8  to (100, 0, 100), "pink"'
-    print >> f, '@map color 9  to (255, 165, 0), "orange"'
-    print >> f, '@map color 10 to (255, 255, 0), "yellow"'
-    print >> f, '@map color 11 to (220, 220, 220), "grey"'
-    print >> f, '@map color 12 to (0, 255, 0), "green"'
-    print >> f, '@map color 13 to (148, 0, 211), "violet"'
-    print >> f, '@map color 14 to (114, 33, 188), "indigo"'
-    print >> f, '@map color 15 to (103, 7, 72), "maroon"'
-    print >> f, '@map color 16 to (64, 224, 208), "turquoise"'
-    print >> f, '@map color 17 to (50, 50, 50), "gris2"'
-    print >> f, '@map color 18 to (100, 100, 100), "gris3"'
-    print >> f, '@map color 19 to (150, 150, 150), "gris4"'
-    print >> f, '@map color 20 to (200, 200, 200), "gris5"'
-    print >> f, '@map color 21 to (255, 150, 150), "red2"'
-    print >> f, '@map color 22 to (150, 255, 150), "green2"'
-    print >> f, '@map color 23 to (150, 150, 255), "blue2"'  
+    print("# XMGRACE CREATED BY FCC_ANALYZER",file=f)
+    print("# Only data and labels. Format will",file=f)
+    print("# be added by your default xmgrace",file=f)
+    print("# defaults (including colors, fonts...)",file=f)
+    print("# Except the followins color scheme:",file=f)
+    print('@map color 0  to (255, 255, 255), "white"',file=f)
+    print('@map color 1  to (0, 0, 0), "black"',file=f)
+    print('@map color 2  to (0, 0, 255), "blue"',file=f)
+    print('@map color 3  to (255, 0, 0), "red"',file=f)
+    print('@map color 4  to (0, 139, 0), "green4"',file=f)
+    print('@map color 5  to (0, 255, 255), "cyan"',file=f)
+    print('@map color 6  to (255, 0, 255), "magenta"',file=f)
+    print('@map color 7  to (188, 143, 143), "brown"',file=f)
+    print('@map color 8  to (100, 0, 100), "pink"',file=f)
+    print('@map color 9  to (255, 165, 0), "orange"',file=f)
+    print('@map color 10 to (255, 255, 0), "yellow"',file=f)
+    print('@map color 11 to (220, 220, 220), "grey"',file=f)
+    print('@map color 12 to (0, 255, 0), "green"',file=f)
+    print('@map color 13 to (148, 0, 211), "violet"',file=f)
+    print('@map color 14 to (114, 33, 188), "indigo"',file=f)
+    print('@map color 15 to (103, 7, 72), "maroon"',file=f)
+    print('@map color 16 to (64, 224, 208), "turquoise"',file=f)
+    print('@map color 17 to (50, 50, 50), "gris2"',file=f)
+    print('@map color 18 to (100, 100, 100), "gris3"',file=f)
+    print('@map color 19 to (150, 150, 150), "gris4"',file=f)
+    print('@map color 20 to (200, 200, 200), "gris5"',file=f)
+    print('@map color 21 to (255, 150, 150), "red2"',file=f)
+    print('@map color 22 to (150, 255, 150), "green2"',file=f)
+    print('@map color 23 to (150, 150, 255), "blue2"'  ,file=f)
     # Without the @version, it makes auto-zoom (instead of taking world coords) 
-    print >> f, "@version 50123"
-    print >> f, "@page size 792, 612"
-    print >> f, "@default symbol size 0.010000"
-    print >> f, "@default char size 0.800000"
+    print("@version 50123",file=f)
+    print("@page size 792, 612",file=f)
+    print("@default symbol size 0.010000",file=f)
+    print("@default char size 0.800000",file=f)
     for lab in labs:
-        print >> f, "@with line"
-        print >> f, "@    line on"
-        print >> f, "@    line g0"
-        print >> f, "@    line loctype world"
-        print >> f, "@    line color 20"
-        print >> f, "@    line ",lab.xy[0],",",lab.xy[1],",",lab.xyann[0],",",lab.xyann[1]
-        print >> f, "@line def"
-        print >> f, "@with string"
-        print >> f, "@    string on"
-        print >> f, "@    string g0"
-        print >> f, "@    string loctype world"
-        print >> f, "@    string ", lab.xyann[0],",",lab.xyann[1]
-        print >> f, "@    string def \"",labs[lab],"\""
-    print >> f, "@with g0"
+        print("@with line",file=f)
+        print("@    line on",file=f)
+        print("@    line g0",file=f)
+        print("@    line loctype world",file=f)
+        print("@    line color 20",file=f)
+        print("@    line ",lab.xy[0],",",lab.xy[1],",",lab.xyann[0],",",lab.xyann[1],file=f)
+        print("@line def",file=f)
+        print("@with string",file=f)
+        print("@    string on",file=f)
+        print("@    string g0",file=f)
+        print("@    string loctype world",file=f)
+        print("@    string ", lab.xyann[0],",",lab.xyann[1],file=f)
+        print("@    string def \"",labs[lab],"\"",file=f)
+    print("@with g0",file=f)
     # Set a large view
-    print >> f, "@    view 0.180000, 0.150000, 1.15, 0.92"
+    print("@    view 0.180000, 0.150000, 1.15, 0.92",file=f)
     #Get plotting range from mplt
     x=ax.get_xbound()
     y=ax.get_ybound()
-    print >> f, "@    world ",x[0],",",y[0],",",x[1],",",y[1]
+    print("@    world ",x[0],",",y[0],",",x[1],",",y[1],file=f)
     #Get xlabel from mplt
-    print >> f, "@    xaxis  label \""+ax.get_xlabel()+"\""
-    print >> f, "@    yaxis  label \""+ax.get_ylabel()+"\""
+    print("@    xaxis  label \""+ax.get_xlabel()+"\"",file=f)
+    print("@    yaxis  label \""+ax.get_ylabel()+"\"",file=f)
     if ax2:
         # Position
-        print >> f, "@    yaxis  label place opposite"
-        print >> f, "@    yaxis  ticklabel place opposite"
-        print >> f, "@    yaxis  tick place opposite"
+        print("@    yaxis  label place opposite",file=f)
+        print("@    yaxis  ticklabel place opposite",file=f)
+        print("@    yaxis  tick place opposite",file=f)
     # Char sizes
-    print >> f, "@    xaxis  ticklabel char size 1.250000"
-    print >> f, "@    yaxis  ticklabel char size 1.250000"
-    print >> f, "@    xaxis  label char size 1.500000"
-    print >> f, "@    yaxis  label char size 1.500000"
+    print("@    xaxis  ticklabel char size 1.250000",file=f)
+    print("@    yaxis  ticklabel char size 1.250000",file=f)
+    print("@    xaxis  label char size 1.500000",file=f)
+    print("@    yaxis  label char size 1.500000",file=f)
     #Get tick spacing from mplt
     x=ax.get_xticks()
     y=ax.get_yticks()
-    print >> f, "@    xaxis  tick major", x[1]-x[0]
-    print >> f, "@    yaxis  tick major", y[1]-y[0]
+    print("@    xaxis  tick major", x[1]-x[0],file=f)
+    print("@    yaxis  tick major", y[1]-y[0],file=f)
     #Legend
-    print >> f, "@    legend char size 1.250000"
-    print >> f, "@    legend loctype view"
-    print >> f, "@    legend 0.95, 0.9"
+    print("@    legend char size 1.250000",file=f)
+    print("@    legend loctype view",file=f)
+    print("@    legend 0.95, 0.9",file=f)
     #Now include data
     label_list = ['0-0']+[ 'C'+str(i) for i in range(1,8) ]+['Hot']
     color_list = [ 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -2997,13 +2998,13 @@ def export_xmgrace(filename,ax,sticks,labs,ax2=None,specs=None):
     data = sticks.get_segments()
     x = np.array([ [ data[j][i][0] for i in [0,1,0] ] for j in range(len(data)) ]).flatten()
     y = np.array([ [ data[j][i][1] for i in [0,1,0] ] for j in range(len(data)) ]).flatten()
-    print >> f, "& Stick transitions"
-    print >> f, "@type xy"
-    print >> f, "@    s"+str(k)," line type 1"
-    #print >> f, "@    s"+str(k)," legend  \"%s\""%(label_list[iclass])
-    #print >> f, "@    s"+str(k)," symbol color %s"%(color_list[iclass])
+    print("& Stick transitions",file=f)
+    print("@type xy",file=f)
+    print("@    s"+str(k)," line type 1",file=f)
+    #print("@    s"+str(k)," legend  \"%s\""%(label_list[iclass]),file=f)
+    #print("@    s"+str(k)," symbol color %s"%(color_list[iclass]),file=f)
     for i in range(len(x)):
-        print >> f, x[i], y[i]
+        print(x[i], y[i],file=f)
     ymax = max(ymax,y.max())
     ymin = max(ymin,y.min())
             
@@ -3017,38 +3018,38 @@ def export_xmgrace(filename,ax,sticks,labs,ax2=None,specs=None):
             scale_factor = ymax/ys_max
         else:
             scale_factor = abs(ymax)/abs(ys_max)
-        print "Scale factor applied to convoluted spectrum %s"%(scale_factor)
+        print("Scale factor applied to convoluted spectrum %s"%(scale_factor))
     else:
         k = 0
-        print >> f, "@g1 on"
-        print >> f, "@g1 hidden false"
-        print >> f, "@with g1"
+        print("@g1 on",file=f)
+        print("@g1 hidden false",file=f)
+        print("@with g1",file=f)
         # Set a large view
-        print >> f, "@    view 0.180000, 0.150000, 1.15, 0.92"
+        print("@    view 0.180000, 0.150000, 1.15, 0.92",file=f)
         #Get plotting range from mplt
         x=ax2.get_xbound()
         y=ax2.get_ybound()
-        print >> f, "@    world ",x[0],",",y[0],",",x[1],",",y[1]
+        print("@    world ",x[0],",",y[0],",",x[1],",",y[1],file=f)
         #Get labels from mplt
-        print >> f, "@    yaxis  label \""+latex2xmgrace(ax2.get_ylabel())+"\""
+        print("@    yaxis  label \""+latex2xmgrace(ax2.get_ylabel())+"\"",file=f)
         # Char sizes
-        print >> f, "@    xaxis  ticklabel char size 1.250000"
-        print >> f, "@    yaxis  ticklabel char size 1.250000"
-        print >> f, "@    xaxis  label char size 1.500000"
-        print >> f, "@    yaxis  label char size 1.500000"
+        print("@    xaxis  ticklabel char size 1.250000",file=f)
+        print("@    yaxis  ticklabel char size 1.250000",file=f)
+        print("@    xaxis  label char size 1.500000",file=f)
+        print("@    yaxis  label char size 1.500000",file=f)
         #Set axis ticks on the left
-        print >> f, "@    xaxis  off"
-        print >> f, "@    yaxis  tick out"
-        print >> f, "@    yaxis  label place normal"
-        print >> f, "@    yaxis  ticklabel place normal"
-        print >> f, "@    yaxis  tick place normal"
+        print("@    xaxis  off",file=f)
+        print("@    yaxis  tick out",file=f)
+        print("@    yaxis  label place normal",file=f)
+        print("@    yaxis  ticklabel place normal",file=f)
+        print("@    yaxis  tick place normal",file=f)
         #Get tick spacing from mplt
         y=ax2.get_yticks()
-        print >> f, "@    yaxis  tick major", y[1]-y[0]
+        print("@    yaxis  tick major", y[1]-y[0],file=f)
         #Legend
-        print >> f, "@    legend char size 1.250000"
-        print >> f, "@    legend loctype view"
-        print >> f, "@    legend 0.8, 0.9"
+        print("@    legend char size 1.250000",file=f)
+        print("@    legend loctype view",file=f)
+        print("@    legend 0.8, 0.9",file=f)
         # No scale
         scale_factor = 1.0
         
@@ -3060,14 +3061,14 @@ def export_xmgrace(filename,ax,sticks,labs,ax2=None,specs=None):
         leg_label=specs[i].get_label()
         x = s.get_xdata()
         y = s.get_ydata()
-        print >> f, "& "+leg_label
-        print >> f, "@type xy"
-        print >> f, "@    s"+str(k)," line type 1"
-        print >> f, "@    s"+str(k)," line linestyle %s"%(style_list[i])
-        print >> f, "@    s"+str(k)," line color %s"%(color_list[i])
-        print >> f, "@    s"+str(k)," legend  \""+leg_label+"\""
+        print("& "+leg_label,file=f)
+        print("@type xy",file=f)
+        print("@    s"+str(k)," line type 1",file=f)
+        print("@    s"+str(k)," line linestyle %s"%(style_list[i]),file=f)
+        print("@    s"+str(k)," line color %s"%(color_list[i]),file=f)
+        print("@    s"+str(k)," legend  \""+leg_label+"\"",file=f)
         for j in range(len(x)):
-            print >> f, x[j], y[j]*scale_factor
+            print(x[j], y[j]*scale_factor,file=f)
         k += 1
             
     f.close()
@@ -3169,7 +3170,7 @@ def get_args():
 
         input_args_dict[input_arg[0]] = input_arg[1]
     
-    for key,value in input_args_dict.iteritems():
+    for key,value in input_args_dict.items():
         # Check it is allowed
         isValid = final_arguments.get(key,None)
         if isValid is None:
@@ -3179,23 +3180,23 @@ def get_args():
         
     if final_arguments.get("-h"):
         
-        print """
+        print("""
  ----------------------------------------
            IR analyzer
    A GUI to analyze vibrational spectra
  ----------------------------------------
-        """
+        """)
         helptext()
-        print "    Options:"
-        print "    --------"
-        print '      {0:<10}  {1:^4}  {2:<41}  {3:<7}'.format("Flag","Type","Description","Value")
-        print '      {0:-<10}  {1:-^4}  {2:-<41}  {3:-<7}'.format("","","","")
-        for key,value in final_arguments.iteritems():
+        print("    Options:")
+        print("    --------")
+        print('      {0:<10}  {1:^4}  {2:<41}  {3:<7}'.format("Flag","Type","Description","Value"))
+        print('      {0:-<10}  {1:-^4}  {2:-<41}  {3:-<7}'.format("","","",""))
+        for key,value in final_arguments.items():
             descr = arg_description[key]
             atype = arg_type[key]
             #atype=str(type(value)).replace("<type '","").replace("'>","")
-            print '      {0:<10}  {1:^4}  {2:<41}  {3:<7}'.format(key, atype, descr, str(value))
-        print ""
+            print('      {0:<10}  {1:^4}  {2:<41}  {3:<7}'.format(key, atype, descr, str(value)))
+        print("")
         
         sys.exit()
         
