@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 DESCRIPTION
 -----------
@@ -181,7 +181,7 @@ class LabelSet:
         for labref in labs:
             lab = labs[labref]
             if lab == agrlabel:
-                print "This label was already defined"
+                print("This label was already defined")
                 set_lab = False
         if set_lab:
             # The dictionary labs relates each labelref(annotation) to 
@@ -269,69 +269,69 @@ def export_xmgrace(event):
     if event.mouseevent.button!=2: return True
 
     xmgrfile = g09file.split(".")[0]+".agr"
-    print "\nExporting plot to xmgrace ("+xmgrfile+")..."
+    print("\nExporting plot to xmgrace ("+xmgrfile+")...")
 
     f = open(xmgrfile,'w')
     
-    print >> f, "# XMGRACE CREATED BY FCC_ANALYZER"
-    print >> f, "# Only data and labels. Format will"
-    print >> f, "# be added by your default xmgrace"
-    print >> f, "# defaults (including colors, fonts...)"
+    print("# XMGRACE CREATED BY FCC_ANALYZER",file=f)
+    print("# Only data and labels. Format will",file=f)
+    print("# be added by your default xmgrace",file=f)
+    print("# defaults (including colors, fonts...)",file=f)
     # Without the @version, it makes auto-zoom (instead of taking world coords) 
-    print >> f, "@version 50123"
-    print >> f, "@page size 792, 612"
-    print >> f, "@default symbol size 0.010000"
-    print >> f, "@default char size 0.800000"
+    print("@version 50123",file=f)
+    print("@page size 792, 612",file=f)
+    print("@default symbol size 0.010000",file=f)
+    print("@default char size 0.800000",file=f)
     for lab in labs:
-        print >> f, "@with line"
-        print >> f, "@    line on"
-        print >> f, "@    line loctype world"
-        print >> f, "@    line ",lab.xy[0],",",lab.xy[1],",",lab.xyann[0],",",lab.xyann[1]
-        print >> f, "@line def"
-        print >> f, "@with string"
-        print >> f, "@    string on"
-        print >> f, "@    string loctype world"
-        print >> f, "@    string ", lab.xyann[0],",",lab.xyann[1]
-        print >> f, "@    string def \"",labs[lab],"\""
-    print >> f, "@with g0"
+        print("@with line",file=f)
+        print("@    line on",file=f)
+        print("@    line loctype world",file=f)
+        print("@    line ",lab.xy[0],",",lab.xy[1],",",lab.xyann[0],",",lab.xyann[1],file=f)
+        print("@line def",file=f)
+        print("@with string",file=f)
+        print("@    string on",file=f)
+        print("@    string loctype world",file=f)
+        print("@    string ", lab.xyann[0],",",lab.xyann[1],file=f)
+        print("@    string def \"",labs[lab],"\"",file=f)
+    print("@with g0",file=f)
     # Set a large view
-    print >> f, "@    view 0.150000, 0.150000, 1.2, 0.92"
+    print("@    view 0.150000, 0.150000, 1.2, 0.92",file=f)
     #Get plotting range from mplt
     x=ax.get_xbound()
     y=ax.get_ybound()
-    print >> f, "@    world ",x[0],",",y[0],",",x[1],",",y[1]
+    print("@    world ",x[0],",",y[0],",",x[1],",",y[1],file=f)
     #Get xlabel from mplt
-    print >> f, "@    xaxis  label \""+ax.get_xlabel()+"\""
-    print >> f, "@    yaxis  label \"\\xe\\f{} (M\\S-1\\N cm\\S-1\\N)\""
+    print("@    xaxis  label \""+ax.get_xlabel()+"\"",file=f)
+    print("@    yaxis  label \"\\xe\\f{} (M\\S-1\\N cm\\S-1\\N)\"",file=f)
     #Get tick spacing from mplt
     x=ax.get_xticks()
     y=ax.get_yticks()
-    print >> f, "@    xaxis  tick major", x[1]-x[0]
-    print >> f, "@    yaxis  tick major", y[1]-y[0]
+    print("@    xaxis  tick major", x[1]-x[0],file=f)
+    print("@    yaxis  tick major", y[1]-y[0],file=f)
     #Legend
-    print >> f, "@    legend loctype view"
-    print >> f, "@    legend 0.95, 0.9"
+    print("@    legend loctype view",file=f)
+    print("@    legend 0.95, 0.9",file=f)
     #Now include data
     counter=-1
     if (xc.size != 0):
         counter+=1
-        print >> f, "# Spect"
-        print >> f, "@    s"+str(counter),"line type 1"
-        print >> f, "@    s"+str(counter),"line linestyle 3"
- #       print >> f, "@    s"+str(counter),"legend  \"Spec\""
+        print("# Spect",file=f)
+        print("@    s"+str(counter),"line type 1",file=f)
+        print("@    s"+str(counter),"line linestyle 3",file=f)
+ #       print("@    s"+str(counter),"legend  \"Spec\"",file=f)
         for i in range(0,xc.size):
-            print >> f, xc[i], yc[i]
+            print(xc[i], yc[i],file=f)
     if True:
         counter+=1
-        print >> f, "& sticks"
-        print >> f, "@type bar"
-        print >> f, "@    s"+str(counter),"line type 0"
-#        print >> f, "@    s"+str(counter),"legend  \"Stics\""
+        print("& sticks",file=f)
+        print("@type bar",file=f)
+        print("@    s"+str(counter),"line type 0",file=f)
+#        print("@    s"+str(counter),"legend  \"Stics\"",file=f)
         for i in range(len(xs)):
-            print >> f, xs[i], ys[i]
+            print(xs[i], ys[i],file=f)
             
     f.close()
-    print "Done\n"
+    print("Done\n")
 
 
 def convolute(spc_stick,npoints=1000,hwhm=0.1,broad="Gau",input_bins=False):
@@ -476,7 +476,7 @@ def get_args():
 
         input_args_dict[input_arg[0]] = input_arg[1]
     
-    for key,value in input_args_dict.iteritems():
+    for key,value in input_args_dict.items():
         # Check it is allowed
         isValid = final_arguments.get(key,None)
         if isValid is None:
@@ -493,7 +493,7 @@ def get_args():
         
     if final_arguments.get("-h"):
         
-        print """
+        print("""
  ----------------------------------------
           analyze_UVspectrum.py
 
@@ -501,17 +501,17 @@ def get_args():
       and convolute it with desired
           broadening function 
  ----------------------------------------
-        """
-        print "    Options:"
-        print "    --------"
-        print '      {0:<10}  {1:^4}  {2:<41}  {3:<7}'.format("Flag","Type","Description","Value")
-        print '      {0:-<10}  {1:-^4}  {2:-<41}  {3:-<7}'.format("","","","")
-        for key,value in final_arguments.iteritems():
+        """)
+        print("    Options:")
+        print("    --------")
+        print('      {0:<10}  {1:^4}  {2:<41} {3:<7}'.format("Flag","Type","Description","Value"))
+        print('      {0:-<10}  {1:-^4}  {2:-<41}  {3:-<7}'.format("","","",""))
+        for key,value in final_arguments.items():
             descr = arg_description[key]
             atype = arg_type[key]
             #atype=str(type(value)).replace("<type '","").replace("'>","")
-            print '      {0:<10}  {1:^4}  {2:<41}  {3:<7}'.format(key, atype, descr, str(value))
-        print ""
+            print('      {0:<10}  {1:^4}  {2:<41}  {3:<7}'.format(key, atype, descr, str(value)))
+        print("")
         
         sys.exit()
         
@@ -629,14 +629,14 @@ if __name__ == '__main__':
     # Convoluted spectrum
     f = open(spcfile,'w')
     for i in range(len(xc)):
-        print >> f, xc[i], yc[i]
+        print(xc[i], yc[i],file=f)
     f.close()
     # Stick transitions
     f = open(stickfile,'w')
     for i in range(len(xs)):
-        print >> f, xs[i], ys[i]
+        print(xs[i], ys[i],file=f)
     f.close()
-    print "Sticks and convoluted spectrum printed to "+stickfile+" and "+spcfile
+    print("Sticks and convoluted spectrum printed to "+stickfile+" and "+spcfile)
     
     if not do_print:
         sys.exit()
