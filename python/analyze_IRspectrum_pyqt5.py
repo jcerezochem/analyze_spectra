@@ -1281,7 +1281,8 @@ class AppForm(QMainWindow):
     # RESPONSES TO SIGNALS
     def update_fixlegend(self):
         fixlegend = not self.fixlegend_cb.isChecked()
-        self.legend.draggable(fixlegend)
+        #self.legend.draggable(fixlegend) #<- this is PyQt4
+        self.legend.set(draggable=fixlegend)
         
     
     def update_hwhm_from_slider(self,UpdateConvolute=True):
@@ -1311,8 +1312,7 @@ class AppForm(QMainWindow):
         
     def update_scale_from_textbox(self):
         text = str(self.scalebox.text())
-        hwhm = float(text)
-        self.scale = float(str)
+        self.scale = float(text)
         if self.scale == 0.0:
             self.scalebox.setText('1.0')
             text = str(self.scalebox.text())
