@@ -263,23 +263,29 @@ class AppForm(QMainWindow):
         # Get command line arguments
         cml_args = get_args()
         
-        g09file = cml_args['-f']
+        QCfile = cml_args['-f']
         # First locate data file
-        if os.path.isfile(g09file):
+        if os.path.isfile(QCfile):
             path=""
         else:
             file_choices = r"Gaussian log file (*.log);; All files (*)"
-            g09file = QFileDialog.getOpenFileName(self, 
-                            'Set the location of Gaussian output', '', 
+            QCfile = QFileDialog.getOpenFileName(self, 
+                            'Set the location of Quantum Chemistry output', '', 
                             file_choices)
             # Management of QFileDialog output is different in PyQt5
             #  * Do not use unicode() to wrap the call
             #  * It is now an array. Take first value
-            g09file = g09file[0]
-            if not g09file:
+            QCfile = QCfile[0]
+            if not QCfile:
                 return
 
-        self.setWindowTitle('IR spectrum from '+g09file)
+        self.setWindowTitle('IR spectrum from '+QCfile)
+        
+        # Get the format of the QC output
+        supported_formats = ['gaussian','orca']
+        fmt = cml_args.get("-fmt").lower()
+        if fmt not in supported_formats:
+            raise BaseException(f'Format {fmt} not supported. Try one of {supported_formats}')
 
         # Set fix parameters
         self.spc_type  = 'abs'
@@ -288,15 +294,21 @@ class AppForm(QMainWindow):
 
         # Data load
         if cml_args.get("-anh"):
-            self.modes = read_anharm_ir_glog(g09file)
+            if fmt == 'gaussian':
+                self.modes = read_anharm_ir_glog(QCfile)
+            else:
+                raise BaseException(f'Format not compatible with -anh flag: {fmt}')
         else:
-            self.modes = read_ir_glog(g09file)
+            if fmt == 'gaussian':
+                self.modes = read_ir_glog(QCfile)
+            elif fmt == 'orca':
+                self.modes = read_ir_orca(QCfile)
         # Get xstick,ystick
         self.xstick = np.array([ self.modes[i].freq     for i in range(len(self.modes)) ])
         self.ystick = np.array([ self.modes[i].irintens for i in range(len(self.modes)) ])
         
         # This is the load driver
-        self.load_ir_sticks()
+        self.load_ir_sticks(fmt)
         self.set_axis_labels()
         self.load_convoluted()
         self.load_legend()        
@@ -760,14 +772,14 @@ class AppForm(QMainWindow):
         self.canvas.draw()
         
         
-    def load_ir_sticks(self):
+    def load_ir_sticks(self,fmt):
         """ 
         Load stick spectra with all electronic states
         - The spectra objects are stored in a list: self.stickspc
         """
         # clear the axes and redraw the plot anew
         # 
-        self.axes.set_title('IR spectrum Gaussian calculation',fontsize=18)
+        self.axes.set_title(f'IR spectrum {fmt} calculation',fontsize=18)
         self.axes.set_xlabel(self.xaxis_units,fontsize=16)
         self.axes.set_ylabel('Stick '+self.data_type,fontsize=16)
         self.axes.tick_params(direction='out',top=False, right=False)
@@ -2559,19 +2571,17 @@ def read_fort21(fort21file,MaxClass):
 
 
 
-def read_ir_glog(g09file):
+def read_ir_glog(QCfile):
     """
-    Function that reads transition info from TDDFT jobs
-    It outputs:
-    
+    Function that reads IR info from Gaussian logs
     """
     # Open and read file
     tr=[]
     print("Loading vibrational modes from Gaussian log...")
     try:
-        f = open(g09file,'r')
+        f = open(QCfile,'r')
     except:
-        exit("ERROR: Cannot open file: "+g09file)
+        exit("ERROR: Cannot open file: "+QCfile)
         
     # Find the section with harmonic freqcuencies
     for line in f:
@@ -2645,7 +2655,74 @@ def read_ir_glog(g09file):
             
     return tr
 
-def read_anharm_ir_glog(g09file):
+def read_ir_orca(QCfile):
+    """
+    Function that reads IR info from ORCA jobs
+    """
+    # Open and read file
+    tr=[]
+    print("Loading vibrational modes from ORCA out...")
+    try:
+        f = open(QCfile,'r')
+    except:
+        exit("ERROR: Cannot open file: "+QCfile)
+        
+    # Find the section with harmonic freqcuencies
+    for line in f:
+        if "IR SPECTRUM" in line:
+            break
+    # The section will start after a "line"
+    for line in f:
+        if "--------------------" in line:
+            break
+        
+    # Start reading. available info (by line) is
+    #---------------------
+    # Index(from 5/6): freq(cm-1) eps(M-1cm-1) Int(same as G16) TDM**2 Tx Ty Tz
+    #---------------------
+    ind0 = None
+    ind  = []
+    symm = []
+    freq = []
+    redmass  = []
+    frcconst = []
+    irintens = []
+    ramanact = []
+    for line in f:
+        data = line.split()
+        if len(line.strip()) == 0:
+            break
+        # Remove non-numeric chars (could do at once with re..)
+        line = line.replace(':','').replace('(','').replace(')','')
+        data = line.split()
+        if ind0 == None:
+            ind0 = int(data[0])
+        ind.append(int(data[0])-ind0+1)
+        freq.append(float(data[1]))
+        irintens.append(float(data[3]))
+    f.close()
+                
+    tr=[]
+    for i in range(len(ind)):
+        tr.append(vibrational_mode())
+        tr[i].ind  = ind[i]
+        tr[i].type = 'Fundamental'
+        tr[i].symm = '?' #symm[i]
+        if len(freq) != 0:
+            tr[i].freq   = freq[i]
+            tr[i].freqsc = freq[i]
+        if len(redmass) != 0:
+            tr[i].redmass = redmass[i]
+        if len(frcconst) != 0:
+            tr[i].frcconst = frcconst[i]
+        if len(irintens) != 0:
+            tr[i].irintens = irintens[i]
+        if len(ramanact) != 0:
+            tr[i].ramanact = ramanact[i]
+            
+    return tr
+
+def read_anharm_ir_glog(QCfile):
     """
     Function that reads transition info from TDDFT jobs
     It outputs:
@@ -2655,9 +2732,9 @@ def read_anharm_ir_glog(g09file):
     tr=[]
     print("Loading anharmonic vibrational info from Gaussian log...")
     try:
-        f = open(g09file,'r')
+        f = open(QCfile,'r')
     except:
-        exit("ERROR: Cannot open file: "+g09file)
+        exit("ERROR: Cannot open file: "+QCfile)
         
     # Find the section with harmonic freqcuencies
     for line in f:
@@ -3132,18 +3209,21 @@ def get_args():
     final_arguments["--test"]=False
     final_arguments["-h"]=False
     final_arguments["-anh"]=False
+    final_arguments["-fmt"]='gaussian' #default
     # Description of the options
     arg_description = dict()
-    arg_description["-f"] ="Gaussian log file name"
+    arg_description["-f"] ="QC log file name"
     arg_description["--test"]="Load spectra and quit"
     arg_description["-h"]    ="Show this help"
     arg_description["-anh"]  ="Use anharmonic information in the file"
+    arg_description["-fmt"]  ="Format of QC output (gaussian, orca)"
     # Type for arguments
     arg_type = dict()
-    arg_type["-f"] ="int"
+    arg_type["-f"] ="str"
     arg_type["--test"]="-"
     arg_type["-h"]    ="-"
     arg_type["-anh"]  ="-"
+    arg_type["-fmt"]  ="str"
     
     # Get list of input args
     input_args_list = []
